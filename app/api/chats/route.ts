@@ -22,29 +22,10 @@ const standaloneQuestionPrompt = PromptTemplate.fromTemplate(
   standaloneQuestionTemplate,
 );
 
-// const answerTemplate = `
-// You are a helpful and friendly assistant. Always greet the user first. Answer the question based on the context provided. If the answer is not in the context, say that you don't know and do not make up an answer.
-// Recommend the user to contact the support team if you don't know the answer.
-// If the answer is not in the context, check chat history to see if the answer is there.
-// Use chat history to make the user feels more familiar with the assistant.
-
-// <context>
-// {context}
-// </context>
-
-// <question>
-// {question}
-// </question>
-
-// <chat_history>
-// {chat_history}
-// </chat_history>
-
-// Answer: `;
-
 const answerTemplate = `
-You are a helpful and friendly assistant. Always greet the user first. Answer the question based on the context provided. If the answer is not in the context, say that you don't know and do not make up an answer. 
+You are a helpful and friendly assistant. Answer the question based on the context provided. If the answer is not in the context, check chat history to see if the answer is there. If answer is not there, say that you don't know and do not make up an answer.
 Recommend the user to contact the support team if you don't know the answer.
+Use chat history to make the user feels more familiar with the assistant.
 
 <context>
 {context}
@@ -53,6 +34,10 @@ Recommend the user to contact the support team if you don't know the answer.
 <question>
 {question}
 </question>
+
+<chat_history>
+{chatHistory}
+</chat_history>
 
 Answer: `;
 
@@ -79,21 +64,29 @@ const retrieverChain = RunnableSequence.from([
   retriever,
 ]);
 
+const chatHistory: { user: string; ai: string }[] = [];
+
 const chain = RunnableSequence.from([
   {
     context: (input) => retrieverChain.invoke({ question: input.question }),
     question: new RunnablePassthrough(),
+    chatHistory: () =>
+      chatHistory.map((msg) => `User: ${msg.user}\nAI: ${msg.ai}`).join("\n\n"),
   },
   answerPrompt,
   llm,
   new StringOutputParser(),
 ]);
 
-const chatHistory = [];
-
 export async function POST(req: Request) {
   const body = await req.json();
   const question = body.messages[0].content;
   const answer = await chain.invoke({ question });
+
+  chatHistory.push({
+    user: question,
+    ai: answer,
+  });
+
   return Response.json({ message: answer });
 }
