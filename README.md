@@ -1,36 +1,130 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# LangChain Chatbot with Google Gemini Embeddings and Supabase
+
+A Next.js chatbot that uses LangChain to provide answers based on a custom FAQ dataset. It leverages Google Gemini for generating embeddings, Supabase as a vector store, and OpenAI's GPT-4o-mini for generating response.
+
+## Prerequisites
+
+Before you begin, ensure you have the following:
+
+- **Node.js** (v18 or higher)
+- **Supabase Account**: A project with a `documents` table and a `match_documents` function (see [Supabase Setup](#supabase-setup)).
+- **Google AI Studio API Key**: For Gemini embeddings.
+- **OpenAI API Key**: For the chat model.
+
+## Setup
+
+### 1. Clone the repository
+
+```bash
+git clone <repository-url>
+cd langchain-chatbot-test
+```
+
+### 2. Install dependencies
+
+```bash
+npm install
+```
+
+### 3. Configure Environment Variables
+
+Create a `.env` file in the root directory and add the following variables:
+
+```env
+SUPABASE_URL=your_supabase_project_url
+SUPABASE_API_KEY=your_supabase_anon_key
+GOOGLE_GEMINI_API_KEY=your_google_gemini_api_key
+OPENAI_API_KEY=your_openai_api_key
+
+# Optional settings for text splitting
+SPLITTER_CHUNK_SIZE=1100 # It's recommended to have in one chunk - one question and answer
+SPLITTER_CHUNK_OVERLAP=50
+```
+
+### 4. Supabase Setup
+
+You need to set up your Supabase database to support vector search (https://docs.langchain.com/oss/python/integrations/vectorstores/supabase). Run the following SQL in your Supabase SQL Editor:
+
+```sql
+-- Enable the pgvector extension to work with embedding vectors
+create extension if not exists vector;
+
+-- Create a table to store your documents
+create table
+  documents (
+    id uuid primary key,
+    content text, -- corresponds to Document.pageContent
+    metadata jsonb, -- corresponds to Document.metadata
+    embedding vector (1536) -- 1536 works for OpenAI embeddings, change if needed
+  );
+
+-- Create a function to search for documents
+create function match_documents (
+  query_embedding vector (1536),
+  filter jsonb default '{}'
+) returns table (
+  id uuid,
+  content text,
+  metadata jsonb,
+  similarity float
+) language plpgsql as $$
+#variable_conflict use_column
+begin
+  return query
+  select
+    id,
+    content,
+    metadata,
+    1 - (documents.embedding <=> query_embedding) as similarity
+  from documents
+  where metadata @> filter
+  order by documents.embedding <=> query_embedding;
+end;
+$$;
+```
 
 ## Getting Started
 
-First, run the development server:
+### 1. Fill the Vector Store
+
+Before chatting, you need to process the FAQ data and store it as embeddings in Supabase. This project uses `assets/faq.txt` as the source.
+
+```bash
+npm run fill-vector-store
+```
+
+This command will:
+
+- Read the content of `assets/faq.txt`.
+- Split the text into manageable chunks.
+- Generate embeddings for each chunk using Google Gemini.
+- Store the chunks and embeddings in your Supabase `documents` table.
+
+### 2. Run the Development Server
+
+Start the Next.js development server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Usage
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Once the server is running, you can use the chat interface to ask questions about the company. The assistant will:
 
-## Learn More
+1. Convert your query into a standalone question.
+2. Search the Supabase vector store for relevant context from the FAQ.
+3. Generate a helpful response using OpenAI's GPT-4o-mini, incorporating the retrieved context.
 
-To learn more about Next.js, take a look at the following resources:
+If the answer isn't found in the provided context, the assistant will politely inform you and suggest contacting the support team.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Technologies Used
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- **Next.js**: Framework for the web application.
+- **LangChain**: Orchestration of AI workflows.
+- **Supabase**: Vector database.
+- **Google Gemini**: Embedding model (`gemini-embedding-001`).
+- **OpenAI**: Chat model (`gpt-4o-mini`).
+- **Zod**: Environment variable validation.

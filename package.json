@@ -2,10 +2,12 @@
   "name": "langchain-chatbot-test",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "fill-vector-store": "tsx scripts/fill-vector-store.ts",
     "lint": "eslint"
   },
   "dependencies": {
@@ -14,6 +16,12 @@
     "react-dom": "19.2.3"
   },
   "devDependencies": {
+    "@langchain/community": "^1.1.10",
+    "@langchain/core": "^1.1.17",
+    "@langchain/google-genai": "^2.1.13",
+    "@langchain/openai": "^1.2.3",
+    "@langchain/textsplitters": "^1.0.1",
+    "@supabase/supabase-js": "^2.93.2",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
@@ -21,6 +29,8 @@
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "tsx": "^4.21.0",
+    "typescript": "^5",
+    "zod": "^3.25.76"
   }
 }
