@@ -41,9 +41,9 @@ COPY --from=builder /app ./
 
 USER nextjs
 
-EXPOSE 3000
+EXPOSE 8080
 
-ENV PORT 3000
+ENV PORT 8080
 ENV HOSTNAME "0.0.0.0"
 
 # server.ts uses tsx, so we run via npm start which is defined as:

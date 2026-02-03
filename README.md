@@ -108,7 +108,7 @@ Start the Next.js development server:
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser.
+Open [http://localhost:8080](http://localhost:8080) in your browser.
 
 ## Usage
 
@@ -132,7 +132,7 @@ The easiest way to run the app is with Docker Compose, which handles the build p
 docker-compose up --build
 ```
 
-The application will be available at `http://localhost:3000` (or the port specified in the Dockerfile).
+The application will be available at `http://localhost:8080` (or the port specified in the Dockerfile).
 
 ### 2. Using Docker Directly
 
@@ -145,7 +145,7 @@ docker build -t langchain-chatbot .
 **Run the container:**
 
 ```bash
-docker run -p 3000:3000 --env-file .env langchain-chatbot
+docker run -p 8080:8080 --env-file .env langchain-chatbot
 ```
 
 ## Technologies Used

@@ -16,7 +16,9 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({
   const [webSocket, setWebSocket] = useState<WebSocket | null>(null);
 
   useEffect(() => {
-    const ws = new WebSocket("ws://localhost:3000/api/ws");
+    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+    const host = window.location.host;
+    const ws = new WebSocket(`${protocol}//${host}/api/ws`);
 
     setWebSocket(ws);
 
