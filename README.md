@@ -120,6 +120,34 @@ Once the server is running, you can use the chat interface to ask questions abou
 
 If the answer isn't found in the provided context, the assistant will politely inform you and suggest contacting the support team.
 
+## Docker Deployment
+
+You can run the entire application using Docker.
+
+### 1. Using Docker Compose (Recommended)
+
+The easiest way to run the app is with Docker Compose, which handles the build process and environment variables automatically.
+
+```bash
+docker-compose up --build
+```
+
+The application will be available at `http://localhost:3000` (or the port specified in the Dockerfile).
+
+### 2. Using Docker Directly
+
+**Build the image:**
+
+```bash
+docker build -t langchain-chatbot .
+```
+
+**Run the container:**
+
+```bash
+docker run -p 3000:3000 --env-file .env langchain-chatbot
+```
+
 ## Technologies Used
 
 - **Next.js**: Framework for the web application.

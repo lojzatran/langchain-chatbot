@@ -7,9 +7,10 @@ import { streamAnswer } from "@/lib/chatbot-langchain";
 export default class ChatbotWebsocketServer {
   private wss: WebSocketServer;
   private clients: Map<WebSocket, ChatSession>;
+  private readonly TEN_MINUTES_IN_MS = 10 * 60 * 1000;
 
   constructor() {
-    this.wss = new WebSocketServer({ port: 8080 });
+    this.wss = new WebSocketServer({ noServer: true });
     this.clients = new Map();
   }
 
@@ -22,8 +23,8 @@ export default class ChatbotWebsocketServer {
       });
 
       ws.on("message", async (messageBuffer: Buffer) => {
-          const message = messageBuffer.toString();
-          console.log("Client message: ", message);
+        const message = messageBuffer.toString();
+        console.log("Client message: ", message);
         // chat session is guaranteed to be non-null here because we set it when the client connected
         const chatSession = this.clients.get(ws)!;
         await streamAnswer(ws, message, chatSession.chatHistory);
@@ -51,7 +52,7 @@ export default class ChatbotWebsocketServer {
           content: "Hey, are you still here?",
         }),
       );
-    }, 10000);
+    }, this.TEN_MINUTES_IN_MS);
   }
 
   handleUpgrade(req: IncomingMessage, socket: Duplex, head: Buffer) {
