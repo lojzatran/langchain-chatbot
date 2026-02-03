@@ -3,12 +3,13 @@ import { PromptTemplate } from "@langchain/core/prompts";
 import { SupabaseVectorStore } from "@langchain/community/vectorstores/supabase";
 import { StringOutputParser } from "@langchain/core/output_parsers";
 import { createClient } from "@supabase/supabase-js";
-import { GoogleGenAIEmbeddings } from "../../../lib/GoogleGeminiAiEmbeddings";
+import { GoogleGenAIEmbeddings } from "./GoogleGeminiAiEmbeddings";
 import {
   RunnableSequence,
   RunnablePassthrough,
 } from "@langchain/core/runnables";
 import { env } from "@/utils/env";
+import { WebSocket } from "ws";
 
 const llm = new ChatOpenAI({
   apiKey: env.OPENAI_API_KEY,
@@ -64,29 +65,54 @@ const retrieverChain = RunnableSequence.from([
   retriever,
 ]);
 
-const chatHistory: { user: string; ai: string }[] = [];
-
 const chain = RunnableSequence.from([
   {
     context: (input) => retrieverChain.invoke({ question: input.question }),
     question: new RunnablePassthrough(),
-    chatHistory: () =>
-      chatHistory.map((msg) => `User: ${msg.user}\nAI: ${msg.ai}`).join("\n\n"),
+    chatHistory: (input) =>
+      input.chatHistory
+        .map(
+          (msg: { user: string; ai: string }) =>
+            `User: ${msg.user}\nAI: ${msg.ai}`,
+        )
+        .join("\n\n"),
   },
   answerPrompt,
   llm,
-  new StringOutputParser(),
 ]);
 
-export async function POST(req: Request) {
-  const body = await req.json();
-  const question = body.messages[0].content;
-  const answer = await chain.invoke({ question });
+async function streamAnswer(
+  ws: WebSocket,
+  question: string,
+  chatHistory: { user: string; ai: string }[],
+) {
+  const answerStreamEvent = chain.streamEvents(
+    { question, chatHistory },
+    {
+      version: "v2",
+    },
+  );
+
+  let answer = "";
+
+  for await (const streamEvent of answerStreamEvent) {
+    if (streamEvent.event === "on_chat_model_stream") {
+      const content = streamEvent.data.chunk?.content;
+      if (content) {
+        answer += content;
+        ws.send(
+          JSON.stringify({ type: "chunk", role: "ai", content: content }),
+        );
+      }
+    } else if (streamEvent.event === "on_chat_model_end") {
+      ws.send(JSON.stringify({ type: "end", role: "ai", content: answer }));
+    }
+  }
 
   chatHistory.push({
     user: question,
     ai: answer,
   });
-
-  return Response.json({ message: answer });
 }
+
+export { streamAnswer };

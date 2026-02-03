@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useWebSocket } from "../contextproviders/WebSocketProvider";
+import { useEffect, useState, useRef } from "react";
 
 export default function Home() {
   const [messages, setMessages] = useState([
@@ -8,6 +9,17 @@ export default function Home() {
   ]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isStreaming, setIsStreaming] = useState(false);
+  const webSocket = useWebSocket();
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, isLoading]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -18,27 +30,70 @@ export default function Home() {
     setInput("");
     setIsLoading(true);
 
-    const response = await fetch("/api/chats", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        messages: [userMsg],
-      }),
-    });
-
-    const data = await response.json();
-    setMessages((prev) => [
-      ...prev,
-      {
-        id: Date.now(),
-        role: "ai",
-        content: data.message,
-      },
-    ]);
-    setIsLoading(false);
+    webSocket?.send(input);
   };
+
+  useEffect(() => {
+    if (!webSocket) return;
+    webSocket.onmessage = (event) => {
+      try {
+        const parsedData = JSON.parse(event.data);
+
+        if (parsedData.type === "system") {
+          setMessages((prev) => [
+            ...prev,
+            { id: Date.now(), role: "system", content: parsedData.content },
+          ]);
+          return;
+        }
+
+        if (parsedData.type === "chunk") {
+          setIsLoading(false);
+          setIsStreaming(true);
+          setMessages((prev) => {
+            const lastMessage = prev[prev.length - 1];
+            console.log(lastMessage);
+            if (lastMessage.role === "ai") {
+              // the streaming is still going on - we update the last message bubble
+              return [
+                ...prev.slice(0, prev.length - 1),
+                {
+                  ...lastMessage,
+                  content: lastMessage.content + parsedData.content,
+                },
+              ];
+            } else {
+              // the streaming hasn't started yet - we create a new message bubble
+              return [
+                ...prev,
+                {
+                  id: Date.now(),
+                  role: "ai",
+                  content: parsedData.content,
+                },
+              ];
+            }
+          });
+        } else if (parsedData.type === "end") {
+          setIsStreaming(false);
+        }
+      } catch (err) {
+        console.error("Error parsing message: ", err, event.data);
+      }
+    };
+
+    webSocket.onerror = (event) => {
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: Date.now(),
+          role: "system",
+          content: "Error: " + JSON.stringify(event),
+        },
+      ]);
+      setIsLoading(false);
+    };
+  }, [webSocket, isLoading]);
 
   return (
     <div className="flex flex-col h-screen max-w-4xl mx-auto bg-gradient-to-br from-slate-900 via-purple-900/20 to-slate-900 text-white">
@@ -78,6 +133,7 @@ export default function Home() {
             </div>
           </div>
         )}
+        <div ref={messagesEndRef} />
       </div>
 
       {/* Prompt Input */}
