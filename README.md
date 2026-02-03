@@ -1,6 +1,6 @@
 # LangChain Chatbot with Google Gemini Embeddings and Supabase
 
-A Next.js chatbot that uses LangChain to provide answers based on a custom FAQ dataset. It leverages Google Gemini for generating embeddings, Supabase as a vector store, and OpenAI's GPT-4o-mini for generating response.
+A Next.js chatbot that uses LangChain to provide answers based on a custom FAQ dataset. It leverages Google Gemini for generating embeddings, Supabase as a vector store, and OpenAI's GPT-4o-mini for generating response. A test app is running on Railway, please contact me to get the URL + credentials.
 
 ## Prerequisites
 
