@@ -22,8 +22,8 @@ export default class ChatbotWebsocketServer {
       });
 
       ws.on("message", async (messageBuffer: Buffer) => {
-        const message = messageBuffer.toString();
-        console.log("Client message: ", message);
+          const message = messageBuffer.toString();
+          console.log("Client message: ", message);
         // chat session is guaranteed to be non-null here because we set it when the client connected
         const chatSession = this.clients.get(ws)!;
         await streamAnswer(ws, message, chatSession.chatHistory);
