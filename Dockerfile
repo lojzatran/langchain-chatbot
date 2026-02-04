@@ -22,30 +22,39 @@ COPY . .
 # Uncomment the following line in case you want to disable telemetry during the build.
 # ENV NEXT_TELEMETRY_DISABLED 1
 
-RUN npm run build
+RUN SKIP_ENV_VALIDATION=true npm run build
 
 # Stage 3: Production image, copy all the files and run next
-FROM base AS runner
+FROM alpine/ollama AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
-# Uncomment the following line in case you want to disable telemetry during runtime.
-# ENV NEXT_TELEMETRY_DISABLED 1
-
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
-
-# Copy essential files for running the application
-# Since we use 'tsx server.ts' to start, we need the source and node_modules
-COPY --from=builder /app ./
-
-USER nextjs
-
-EXPOSE 8080
-
 ENV PORT 8080
 ENV HOSTNAME "0.0.0.0"
 
-# server.ts uses tsx, so we run via npm start which is defined as:
-# "start": "NODE_ENV=production tsx server.ts"
-CMD ["npm", "start"]
+# Install Node.js and necessary tools
+RUN apk add --no-cache nodejs npm bash curl
+
+# Copy built application and node_modules
+COPY --from=builder /app ./
+
+# Pre-pull the embedding model during build time
+# We start the daemon, wait for it to be ready, pull the model, then kill the daemon
+RUN (ollama serve &) && \
+    until curl -s http://localhost:11434/api/tags > /dev/null; do sleep 1; done && \
+    ollama pull nomic-embed-text && \
+    pkill ollama
+
+# Expose the application port
+EXPOSE 8080
+
+# Create a startup script to run both services
+RUN printf '#!/bin/bash\n\
+ollama serve &\n\
+until curl -s http://localhost:11434/api/tags > /dev/null; do\n\
+  sleep 1\n\
+done\n\
+exec npm start\n' > /app/start.sh && chmod +x /app/start.sh
+
+# Use the startup script as the entry point
+ENTRYPOINT ["/bin/bash", "/app/start.sh"]

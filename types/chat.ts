@@ -5,3 +5,5 @@ export interface Message {
   role: MessageRole;
   content: string;
 }
+
+export type ChatbotConfig = "supabase-gemini-openai" | "upstash-gemini-ollama";

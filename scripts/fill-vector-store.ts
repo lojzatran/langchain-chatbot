@@ -4,6 +4,7 @@ import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
 import { SupabaseVectorStore } from "@langchain/community/vectorstores/supabase";
 import { createClient } from "@supabase/supabase-js";
 import { GoogleGenAIEmbeddings } from "../lib/GoogleGeminiAiEmbeddings.js";
+import { OllamaEmbeddings } from "@langchain/ollama";
 
 import { env } from "../utils/env.js";
 
@@ -21,7 +22,7 @@ const chunks = await splitter.createDocuments([data]);
 
 const supbaseUrl = env.SUPABASE_URL;
 const supbaseKey = env.SUPABASE_API_KEY;
-const googleGeminiAiKey = env.GOOGLE_GEMINI_API_KEY;
+const googleGeminiAiKey = env.GOOGLE_API_KEY;
 
 const supbaseClient = createClient(supbaseUrl, supbaseKey);
 
