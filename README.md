@@ -10,8 +10,8 @@ Upon starting the chat, users can choose between two primary AI chains:
     - **LLM**: OpenAI `gpt-4o-mini`
     - **Embeddings**: Google Gemini `gemini-embedding-001`
     - **Vector Store**: Supabase (PostgreSQL with `pgvector`)
-2.  **Upstash + Gemini + Ollama**:
-    - **LLM**: Google Gemini `gemini-2.5-flash-lite`
+2.  **Upstash + Ollama**:
+    - **LLM**: Ollama `gemma3:1b` (Local)
     - **Embeddings**: Ollama `nomic-embed-text` (Local)
     - **Vector Store**: Upstash Vector (Serverless)
 
@@ -23,10 +23,10 @@ Ensure you have the following credentials and services ready:
 
 - **Node.js**: v18 or higher.
 - **OpenAI API Key**: Required for the first configuration.
-- **Google AI Studio API Key**: Required for both configurations (Gemini LLM and Embeddings).
+- **Google AI Studio API Key**: Required for the first configuration (Gemini LLM and Embeddings).
 - **Supabase Project**: With the `documents` table and `match_documents` function (see [Supabase Setup](#supabase-setup)).
 - **Upstash Vector Index**: For the second configuration.
-- **Ollama nomic-embed-text model**: Installed and running locally (required for local embeddings).
+- **Ollama models**: `gemma3:1b` and `nomic-embed-text` installed and running locally (required for local LLM and embeddings).
 
 ---
 
@@ -180,7 +180,7 @@ docker run -p 8080:8080 --env-file .env langchain-chatbot
 
 - **Framework**: Next.js 16 (App Router)
 - **Orchestration**: LangChain.js
-- **LLMs**: OpenAI GPT-4o-mini, Google Gemini 2.5 Flash Lite
+- **LLMs**: OpenAI GPT-4o-mini, Ollama gemma3:1b (Local)
 - **Embeddings**: Google Gemini, Ollama (Local)
 - **Vector Databases**: Supabase, Upstash Vector
 - **Real-time**: WebSockets for streaming responses

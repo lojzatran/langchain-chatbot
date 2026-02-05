@@ -1,39 +1,43 @@
 import { WebSocketServer, WebSocket } from "ws";
 import { IncomingMessage } from "http";
 import { Duplex } from "stream";
-import ChatSession from "@/lib/ChatSession";
 import { streamAnswer } from "@/lib/chatbot-langchain";
+import { getClientOrDefault, removeClient } from "@/lib/chatbot-client-manager";
 
 export default class ChatbotWebsocketServer {
   private wss: WebSocketServer;
-  private clients: Map<WebSocket, ChatSession>;
   private readonly TEN_MINUTES_IN_MS = 10 * 60 * 1000;
 
   constructor() {
     this.wss = new WebSocketServer({ noServer: true });
-    this.clients = new Map();
   }
 
   start() {
     this.wss.on("connection", (ws: WebSocket) => {
       console.log("Client connected");
-      this.clients.set(ws, {
-        chatHistory: [],
-        timeout: null,
-      });
 
       ws.on("message", async (messageBuffer: Buffer) => {
-        const message = messageBuffer.toString();
+        const message = JSON.parse(messageBuffer.toString());
         console.log("Client message: ", message);
-        // chat session is guaranteed to be non-null here because we set it when the client connected
-        const chatSession = this.clients.get(ws)!;
-        await streamAnswer(ws, message, chatSession.chatHistory);
-        chatSession.timeout = this.setReminder(ws, chatSession.timeout);
+
+        if (message.type === "config") {
+          const chatSession = getClientOrDefault(ws);
+          chatSession.config = message.config;
+          console.log(`Config updated for client to: ${message.config}`);
+          return;
+        }
+
+        const chatSession = getClientOrDefault(ws);
+        const content = message.content;
+        if (content?.length > 0) {
+          await streamAnswer(ws, content, chatSession.chatHistory);
+          chatSession.timeout = this.setReminder(ws, chatSession.timeout);
+        }
       });
 
       ws.on("close", () => {
         console.log("Client disconnected");
-        this.clients.delete(ws);
+        removeClient(ws);
       });
     });
   }

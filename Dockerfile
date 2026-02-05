@@ -38,11 +38,12 @@ RUN apk add --no-cache nodejs npm bash curl
 # Copy built application and node_modules
 COPY --from=builder /app ./
 
-# Pre-pull the embedding model during build time
-# We start the daemon, wait for it to be ready, pull the model, then kill the daemon
+# Pre-pull the models during build time
+# We start the daemon, wait for it to be ready, pull the models, then kill the daemon
 RUN (ollama serve &) && \
     until curl -s http://localhost:11434/api/tags > /dev/null; do sleep 1; done && \
     ollama pull nomic-embed-text && \
+    ollama pull gemma3:1b && \
     pkill ollama
 
 # Expose the application port

@@ -6,10 +6,10 @@ const projectDir = process.cwd();
 loadEnvConfig(projectDir);
 
 const envSchema = z.object({
-  GOOGLE_API_KEY: z.string(),
+  GOOGLE_API_KEY: z.string().optional(),
   SPLITTER_CHUNK_SIZE: z.number().default(1100).optional(),
   SPLITTER_CHUNK_OVERLAP: z.number().default(50).optional(),
-  OPENAI_API_KEY: z.string(),
+  OPENAI_API_KEY: z.string().optional(),
   BASIC_AUTH_USER: z.string().optional(),
   BASIC_AUTH_PASSWORD: z.string().optional(),
   SUPABASE_URL: z.string().url(),

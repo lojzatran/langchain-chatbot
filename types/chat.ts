@@ -6,4 +6,4 @@ export interface Message {
   content: string;
 }
 
-export type ChatbotConfig = "supabase-gemini-openai" | "upstash-gemini-ollama";
+export type ChatbotConfig = "supabase-gemini-openai" | "upstash-gemma3-nomic";

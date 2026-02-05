@@ -4,13 +4,15 @@ import { GoogleGenAIEmbeddings } from "./GoogleGeminiAiEmbeddings";
 import { env } from "@/utils/env";
 import { BaseChatModel } from "@langchain/core/language_models/chat_models";
 import { Embeddings } from "@langchain/core/embeddings";
-import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import { OllamaEmbeddings } from "@langchain/ollama";
 import { SupabaseVectorStore } from "@langchain/community/vectorstores/supabase";
 import { createClient } from "@supabase/supabase-js";
 import { BaseRetriever } from "@langchain/core/retrievers";
 import { UpstashVectorStore } from "@langchain/community/vectorstores/upstash";
 import { Index } from "@upstash/vector";
+import { ChatOllama } from "@langchain/ollama";
+import { getClientOrDefault } from "./chatbot-client-manager";
+import { WebSocket } from "ws";
 
 export const chatbotConfigMap: Record<
   ChatbotConfig,
@@ -47,12 +49,11 @@ export const chatbotConfigMap: Record<
       return vectorStore.asRetriever();
     },
   },
-  "upstash-gemini-ollama": {
+  "upstash-gemma3-nomic": {
     getLlm: () =>
-      new ChatGoogleGenerativeAI({
-        model: "gemini-2.5-flash-lite",
-        temperature: 0.5,
-        maxRetries: 2,
+      new ChatOllama({
+        model: "gemma3:1b",
+        temperature: 0.1,
       }),
     getEmbeddings: () =>
       new OllamaEmbeddings({
@@ -73,20 +74,17 @@ export const chatbotConfigMap: Record<
   },
 };
 
-let selectedConfig: ChatbotConfig = "supabase-gemini-openai";
-
-export const setSelectedConfig = (config: ChatbotConfig) => {
-  selectedConfig = config;
+const getEmbeddings = (ws: WebSocket) => {
+  const client = getClientOrDefault(ws);
+  return chatbotConfigMap[client.config].getEmbeddings();
 };
 
-const getEmbeddings = () => {
-  return chatbotConfigMap[selectedConfig].getEmbeddings();
+export const getLlm = (ws: WebSocket) => {
+  const client = getClientOrDefault(ws);
+  return chatbotConfigMap[client.config].getLlm();
 };
 
-export const getLlm = () => {
-  return chatbotConfigMap[selectedConfig].getLlm();
-};
-
-export const getRetriever = () => {
-  return chatbotConfigMap[selectedConfig].getRetriever(getEmbeddings());
+export const getRetriever = (ws: WebSocket) => {
+  const client = getClientOrDefault(ws);
+  return chatbotConfigMap[client.config].getRetriever(getEmbeddings(ws));
 };

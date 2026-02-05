@@ -9,14 +9,31 @@ import { Message, ChatbotConfig } from "@/types/chat";
 
 export default function Home() {
   const [messages, setMessages] = useState<Message[]>([
-    { id: 1, role: "ai", content: "Select your AI configuration to start!" },
+    {
+      id: 1,
+      role: "ai",
+      content: "Select your AI configuration to start!",
+    },
   ]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
   const [config, setConfig] = useState<string | null>(null);
+  const [isCloudEnabled, setIsCloudEnabled] = useState(true);
   const webSocket = useWebSocket();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const checkConfigStatus = async () => {
+      try {
+        const response = await fetch("/api/chatbots/config");
+        const data = await response.json();
+        setIsCloudEnabled(data.supabaseGeminiOpenAiEnabled);
+      } catch (error) {
+        console.error("Failed to check config status:", error);
+      }
+    };
+    checkConfigStatus();
+  }, []);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -25,20 +42,18 @@ export default function Home() {
   useEffect(() => {
     scrollToBottom();
   }, [messages, isLoading]);
-
   const handleConfigSelect = async (selectedConfig: ChatbotConfig) => {
     setConfig(selectedConfig);
     setMessages((prev) => [
       ...prev,
-      { id: Date.now(), role: "user", content: `Config: ${selectedConfig}` },
-    ]);
-    await fetch("/api/chatbots", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
+      {
+        id: Date.now(),
+        role: "user",
+        content: `Config: ${selectedConfig}`,
       },
-      body: JSON.stringify({ config: selectedConfig }),
-    });
+    ]);
+
+    webSocket?.send(JSON.stringify({ type: "config", config: selectedConfig }));
 
     setMessages([
       {
@@ -53,12 +68,16 @@ export default function Home() {
     e.preventDefault();
     if (!input.trim() || !config) return;
 
-    const userMsg: Message = { id: Date.now(), role: "user", content: input };
+    const userMsg: Message = {
+      id: Date.now(),
+      role: "user",
+      content: input,
+    };
     setMessages((prev) => [...prev, userMsg]);
     setInput("");
     setIsLoading(true);
 
-    webSocket?.send(input);
+    webSocket?.send(JSON.stringify({ content: input }));
   };
 
   useEffect(() => {
@@ -146,26 +165,40 @@ export default function Home() {
           </div>
           <div className="flex gap-4">
             <button
-              onClick={() => handleConfigSelect("supabase-gemini-openai")}
-              className="group relative flex flex-col items-center px-8 py-4 rounded-2xl bg-slate-800 hover:bg-slate-700 border border-slate-700 transition-all duration-300 hover:border-blue-500/50 hover:shadow-[0_0_20px_rgba(59,130,246,0.15)] active:scale-95"
+              onClick={() =>
+                isCloudEnabled && handleConfigSelect("supabase-gemini-openai")
+              }
+              disabled={!isCloudEnabled}
+              className={`group relative flex flex-col items-center px-8 py-4 rounded-2xl bg-slate-800 border border-slate-700 transition-all duration-300 ${
+                isCloudEnabled
+                  ? "hover:bg-slate-700 hover:border-blue-500/50 hover:shadow-[0_0_20px_rgba(59,130,246,0.15)] active:scale-95"
+                  : "opacity-40 cursor-not-allowed grayscale"
+              }`}
             >
-              <span className="text-blue-400 font-bold mb-1">
+              <span
+                className={`${isCloudEnabled ? "text-blue-400" : "text-slate-500"} font-bold mb-1`}
+              >
                 Supabase + Gemini + OpenAI
               </span>
               <span className="text-[10px] text-slate-500 uppercase tracking-tighter">
-                Vector Database + LLM + Embedding
+                {isCloudEnabled
+                  ? "Vector Database + LLM + Embedding"
+                  : "Keys missing: GOOGLE_API_KEY or OPENAI_API_KEY"}
               </span>
-              <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-2xl blur opacity-0 group-hover:opacity-20 transition duration-300"></div>
+              {isCloudEnabled && (
+                <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-2xl blur opacity-0 group-hover:opacity-20 transition duration-300"></div>
+              )}
             </button>
             <button
-              onClick={() => handleConfigSelect("upstash-gemini-ollama")}
+              onClick={() => handleConfigSelect("upstash-gemma3-nomic")}
               className="group relative flex flex-col items-center px-8 py-4 rounded-2xl bg-slate-800 hover:bg-slate-700 border border-slate-700 transition-all duration-300 hover:border-emerald-500/50 hover:shadow-[0_0_20px_rgba(16,185,129,0.15)] active:scale-95"
             >
               <span className="text-emerald-400 font-bold mb-1">
-                Upstash + Gemini + Ollama
+                Upstash + Ollama
               </span>
               <span className="text-[10px] text-slate-500 uppercase tracking-tighter">
-                Vector Database + LLM + Local Embedding nomic-embed-text
+                Vector Database + Local LLM gemma3 + Local Embedding
+                nomic-embed-text
               </span>
               <div className="absolute -inset-0.5 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-2xl blur opacity-0 group-hover:opacity-20 transition duration-300"></div>
             </button>

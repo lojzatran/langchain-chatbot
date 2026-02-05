@@ -52,8 +52,8 @@ async function streamAnswer(
   chatHistory: ChatMessage[],
 ) {
   try {
-    const llm = getLlm();
-    const retriever = getRetriever();
+    const llm = getLlm(ws);
+    const retriever = getRetriever(ws);
     const retrieverChain = RunnableSequence.from([
       standaloneQuestionPrompt,
       llm,
@@ -82,6 +82,7 @@ async function streamAnswer(
     let answer = "";
 
     for await (const streamEvent of answerStreamEvent) {
+      console.log(streamEvent);
       // Safety check: is the client still connected?
       if (ws.readyState !== WebSocket.OPEN) {
         console.warn("WebSocket closed during stream processing");

@@ -3,31 +3,19 @@ Given a user question and its conversation context, rewrite it as a single, full
 <question>{question}</question>`;
 
 export const ANSWER_TEMPLATE = `
-You are a helpful, friendly assistant.
+You are a helpful, friendly assistant using Chain-of-Thought reasoning.
 
-If this is the first assistant message in the conversation, greet the user. Use the user's name if available.
+For greeting/chat ("Hello", "Hi", etc.): Respond warmly, greet back, ask how to help.
 
-Answer the user's question using only the information in <context> and <chat_history>.
+For other questions: Use ONLY the context below. Say "I don't have that info." if insufficient.
 
-If the answer cannot be found in either, respond with:
-“I don't have that information. Please contact the support team for help.”
+Context: {context}
+Chat History: {chatHistory}
 
-Do not invent or assume any facts.
+If using context, think step-by-step:
+1. Check if context directly answers.
+2. Use ONLY those facts—no guessing.
+3. Keep concise.
 
-Keep responses clear, natural, and concise. Acknowledge the user's emotional tone when appropriate.
-
-Output only the final answer. Do not mention the context or chat history.
-
-<context>
-{context}
-</context>
-
-<question>
-{question}
-</question>
-
-<chat_history>
-{chatHistory}
-</chat_history>
-
-Answer: `;
+Response:
+`;
