@@ -8,11 +8,10 @@ import { OllamaEmbeddings } from "@langchain/ollama";
 import { SupabaseVectorStore } from "@langchain/community/vectorstores/supabase";
 import { createClient } from "@supabase/supabase-js";
 import { BaseRetriever } from "@langchain/core/retrievers";
-import { UpstashVectorStore } from "@langchain/community/vectorstores/upstash";
-import { Index } from "@upstash/vector";
 import { ChatOllama } from "@langchain/ollama";
 import { getClientOrDefault } from "./chatbot-client-manager";
 import { WebSocket } from "ws";
+import { Chroma } from "@langchain/community/vectorstores/chroma";
 
 export const chatbotConfigMap: Record<
   ChatbotConfig,
@@ -60,13 +59,9 @@ export const chatbotConfigMap: Record<
         model: "nomic-embed-text:latest",
       }),
     getRetriever: (embeddings: Embeddings) => {
-      const indexWithCredentials = new Index({
-        url: env.UPSTASH_VECTOR_REST_URL,
-        token: env.UPSTASH_VECTOR_REST_TOKEN,
-      });
-
-      const vectorStore = new UpstashVectorStore(embeddings, {
-        index: indexWithCredentials,
+      const vectorStore = new Chroma(embeddings, {
+        collectionName: "faq-collection",
+        url: `http://${env.CHROMA_HOST}:8000`,
       });
 
       return vectorStore.asRetriever();

@@ -1,12 +1,60 @@
 services:
-  app:
-    build:
-      context: .
-      dockerfile: Dockerfile
+  chromadb:
+    image: chromadb/chroma
     ports:
-      - "8080:8080"
+      - "8000:8000"
+
+  ollama:
+    build:
+      dockerfile: ollama.Dockerfile
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+
+  app1:
+    build:
+      dockerfile: app.Dockerfile
+    ports:
+      - "8081:8080"
     env_file:
       - .env
     environment:
       - NODE_ENV=production
-    restart: always
+      - CHROMA_HOST=chromadb
+      - OLLAMA_BASE_URL=http://ollama:11434
+    tty: true
+    depends_on:
+      - chromadb
+      - ollama
+
+  app2:
+    build:
+      dockerfile: app.Dockerfile
+    ports:
+      - "8082:8080"
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production
+      - CHROMA_HOST=chromadb
+      - OLLAMA_BASE_URL=http://ollama:11434
+    tty: true
+    depends_on:
+      - chromadb
+      - ollama
+
+  nginx:
+    build:
+      dockerfile: nginx.Dockerfile
+    ports:
+      - "8080:80"
+    environment:
+      - SERVER_1=app1
+      - SERVER_2=app2
+    depends_on:
+      - app1
+      - app2
+
+volumes:
+  ollama_data:

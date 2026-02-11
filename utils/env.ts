@@ -16,6 +16,7 @@ const envSchema = z.object({
   SUPABASE_API_KEY: z.string(),
   UPSTASH_VECTOR_REST_URL: z.string().url(),
   UPSTASH_VECTOR_REST_TOKEN: z.string(),
+  CHROMA_HOST: z.string().default("localhost").optional(),
 });
 
 const skipValidation = process.env.SKIP_ENV_VALIDATION === "true";

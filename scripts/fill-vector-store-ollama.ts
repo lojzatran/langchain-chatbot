@@ -2,8 +2,7 @@ import fs from "fs/promises";
 import path from "path";
 import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
 import { OllamaEmbeddings } from "@langchain/ollama";
-import { UpstashVectorStore } from "@langchain/community/vectorstores/upstash";
-import { Index } from "@upstash/vector";
+import { Chroma } from "@langchain/community/vectorstores/chroma";
 
 import { env } from "../utils/env.js";
 
@@ -19,17 +18,15 @@ const splitter = new RecursiveCharacterTextSplitter({
 
 const chunks = await splitter.createDocuments([data]);
 
-const indexWithCredentials = new Index({
-  url: env.UPSTASH_VECTOR_REST_URL,
-  token: env.UPSTASH_VECTOR_REST_TOKEN,
-});
-
 const embeddings = new OllamaEmbeddings({
   model: "nomic-embed-text:latest",
 });
 
-await UpstashVectorStore.fromDocuments(chunks, embeddings, {
-  index: indexWithCredentials,
+const vectorStore = new Chroma(embeddings, {
+  collectionName: "faq-collection",
+  url: `http://${env.CHROMA_HOST}:8000`,
 });
+
+await vectorStore.addDocuments(chunks);
 
 console.log("Vector store filled successfully!");
