@@ -2,6 +2,7 @@ import { env } from "@/utils/env";
 import { writeFile } from "fs/promises";
 import { join } from "path";
 import { NextRequest } from "next/server";
+import amqplib from "amqplib";
 
 export async function GET() {
   const isSupabaseGeminiOpenAiEnabled =
@@ -27,6 +28,12 @@ export async function POST(request: NextRequest) {
     // Save to assets folder
     const path = join(process.cwd(), "assets", file.name);
     await writeFile(path, buffer);
+
+    const connection = await amqplib.connect('amqp://localhost');
+    const channel = await connection.createChannel();
+    await channel.assertQueue("fill_vector_store", { durable: false });
+    channel.sendToQueue("fill_vector_store", Buffer.from(JSON.stringify({ file: file.name })), { persistent: true });
+    await connection.close();
 
     return Response.json({
       success: true,

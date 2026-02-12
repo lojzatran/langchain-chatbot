@@ -27,6 +27,7 @@
     }
   },
   "dependencies": {
+    "amqplib": "^0.10.9",
     "chromadb": "^3.2.2",
     "next": "16.1.6",
     "react": "19.2.3",
@@ -43,6 +44,7 @@
     "@langchain/textsplitters": "^1.0.1",
     "@supabase/supabase-js": "^2.93.2",
     "@tailwindcss/postcss": "^4",
+    "@types/amqplib": "^0.10.8",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
