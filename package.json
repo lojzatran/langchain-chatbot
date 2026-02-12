@@ -4,27 +4,13 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "tsx server.ts",
-    "build": "next build",
-    "start": "NODE_ENV=production nx exec -- tsx server.ts",
-    "fill-vector-store": "tsx scripts/fill-vector-store.ts",
-    "fill-vector-store-ollama": "tsx scripts/fill-vector-store-ollama.ts",
-    "lint": "eslint",
+    "dev": "nx dev chatbot",
+    "build": "nx build chatbot",
+    "start": "nx start chatbot",
+    "fill-vector-store": "tsx apps/chatbot/scripts/fill-vector-store.ts",
+    "fill-vector-store-ollama": "tsx apps/chatbot/scripts/fill-vector-store-ollama.ts",
+    "lint": "nx run-many -t lint",
     "format": "nx format:write"
-  },
-  "nx": {
-    "name": "langchain-chatbot-test",
-    "projectType": "application",
-    "targets": {
-      "build": {
-        "cache": true
-      },
-      "start": {
-        "dependsOn": [
-          "build"
-        ]
-      }
-    }
   },
   "dependencies": {
     "amqplib": "^0.10.9",
@@ -32,6 +18,7 @@
     "next": "16.1.6",
     "react": "19.2.3",
     "react-dom": "19.2.3",
+    "tslib": "^2.3.0",
     "tsx": "^4.21.0",
     "ws": "^8.19.0"
   },
@@ -42,19 +29,45 @@
     "@langchain/ollama": "^1.2.2",
     "@langchain/openai": "^1.2.3",
     "@langchain/textsplitters": "^1.0.1",
+    "@next/eslint-plugin-next": "^16.0.1",
+    "@nx/eslint": "^22.5.0",
+    "@nx/eslint-plugin": "^22.5.0",
+    "@nx/jest": "22.5.0",
+    "@nx/js": "22.5.0",
+    "@nx/next": "^22.5.0",
+    "@nx/react": "^22.5.0",
     "@supabase/supabase-js": "^2.93.2",
+    "@swc-node/register": "^1.11.1",
+    "@swc/cli": "~0.8.0",
+    "@swc/core": "^1.15.8",
+    "@swc/helpers": "~0.5.18",
     "@tailwindcss/postcss": "^4",
+    "@testing-library/dom": "10.4.0",
+    "@testing-library/react": "16.3.0",
     "@types/amqplib": "^0.10.8",
+    "@types/jest": "^30.0.0",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@upstash/vector": "^1.2.2",
+    "autoprefixer": "10.4.13",
+    "babel-jest": "^30.0.2",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
-    "nx": "^22.5.0",
+    "eslint-plugin-import": "2.31.0",
+    "eslint-plugin-jsx-a11y": "6.10.1",
+    "eslint-plugin-react": "7.35.0",
+    "eslint-plugin-react-hooks": "5.0.0",
+    "jest": "^30.0.2",
+    "jest-environment-jsdom": "^30.0.2",
+    "jest-util": "^30.0.2",
+    "nx": "22.5.0",
+    "postcss": "8.4.38",
     "prettier": "^3.8.1",
     "tailwindcss": "^4",
-    "typescript": "^5",
+    "ts-jest": "^29.4.0",
+    "ts-node": "10.9.1",
+    "typescript": "^5.9.3",
     "zod": "^3.25.76"
   }
 }

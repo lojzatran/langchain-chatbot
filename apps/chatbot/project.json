@@ -1,0 +1,43 @@
+{
+  "name": "chatbot",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/chatbot",
+  "projectType": "application",
+  "tags": [],
+  "targets": {
+    "build": {
+      "dependsOn": ["build-next", "build-server"]
+    },
+    "build-next": {
+      "command": "next build",
+      "options": {
+        "cwd": "apps/chatbot"
+      }
+    },
+    "build-server": {
+      "command": "npx esbuild server.ts --bundle --platform=node --target=node22 --outfile=../../dist/apps/chatbot/server.cjs --external:next --external:amqplib",
+      "options": {
+        "cwd": "apps/chatbot"
+      }
+    },
+    "dev": {
+      "command": "tsx server.ts",
+      "options": {
+        "cwd": "apps/chatbot"
+      }
+    },
+    "start": {
+      "command": "NODE_ENV=production node ../../dist/apps/chatbot/server.cjs",
+      "options": {
+        "cwd": "apps/chatbot"
+      },
+      "dependsOn": ["build"]
+    },
+    "lint": {
+      "command": "eslint .",
+      "options": {
+        "cwd": "apps/chatbot"
+      }
+    }
+  }
+}

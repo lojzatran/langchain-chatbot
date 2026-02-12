@@ -1,54 +1,51 @@
+x-chatbot-app: &chatbot-app
+  build:
+    dockerfile: ./apps/chatbot/Dockerfile
+  env_file:
+    - .env
+    - ./apps/chatbot/.env
+  environment:
+    - NODE_ENV=production
+    - CHROMA_HOST=chromadb
+    - OLLAMA_BASE_URL=http://ollama:11434
+    - RABBITMQ_URL=amqp://rabbitmq
+  tty: true
+  depends_on:
+    - chromadb
+    - ollama
+    - rabbitmq
+
 services:
   chromadb:
     image: chromadb/chroma
     ports:
-      - "8000:8000"
+      - '8000:8000'
+
+  rabbitmq:
+    image: rabbitmq:4.2.3-management-alpine
+    ports:
+      - '5672:5672'
+      - '15672:15672'
 
   ollama:
     build:
       dockerfile: ollama.Dockerfile
     ports:
-      - "11434:11434"
+      - '11434:11434'
     volumes:
       - ollama_data:/root/.ollama
 
   app1:
-    build:
-      dockerfile: app.Dockerfile
-    ports:
-      - "8081:8080"
-    env_file:
-      - .env
-    environment:
-      - NODE_ENV=production
-      - CHROMA_HOST=chromadb
-      - OLLAMA_BASE_URL=http://ollama:11434
-    tty: true
-    depends_on:
-      - chromadb
-      - ollama
+    <<: *chatbot-app
 
   app2:
-    build:
-      dockerfile: app.Dockerfile
-    ports:
-      - "8082:8080"
-    env_file:
-      - .env
-    environment:
-      - NODE_ENV=production
-      - CHROMA_HOST=chromadb
-      - OLLAMA_BASE_URL=http://ollama:11434
-    tty: true
-    depends_on:
-      - chromadb
-      - ollama
+    <<: *chatbot-app
 
   nginx:
     build:
       dockerfile: nginx.Dockerfile
     ports:
-      - "8080:80"
+      - '8080:80'
     environment:
       - SERVER_1=app1
       - SERVER_2=app2
