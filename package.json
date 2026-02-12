@@ -6,10 +6,25 @@
   "scripts": {
     "dev": "tsx server.ts",
     "build": "next build",
-    "start": "NODE_ENV=production tsx server.ts",
+    "start": "NODE_ENV=production nx exec -- tsx server.ts",
     "fill-vector-store": "tsx scripts/fill-vector-store.ts",
     "fill-vector-store-ollama": "tsx scripts/fill-vector-store-ollama.ts",
-    "lint": "eslint"
+    "lint": "eslint",
+    "format": "nx format:write"
+  },
+  "nx": {
+    "name": "langchain-chatbot-test",
+    "projectType": "application",
+    "targets": {
+      "build": {
+        "cache": true
+      },
+      "start": {
+        "dependsOn": [
+          "build"
+        ]
+      }
+    }
   },
   "dependencies": {
     "chromadb": "^3.2.2",
@@ -34,6 +49,8 @@
     "@upstash/vector": "^1.2.2",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
+    "nx": "^22.5.0",
+    "prettier": "^3.8.1",
     "tailwindcss": "^4",
     "typescript": "^5",
     "zod": "^3.25.76"
