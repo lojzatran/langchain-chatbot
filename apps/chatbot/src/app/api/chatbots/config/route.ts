@@ -1,6 +1,6 @@
-import { env } from '../../../../utils/env';
-import { writeFile } from 'fs/promises';
-import { join } from 'path';
+import { env } from '@common';
+import { writeFile, mkdir } from 'fs/promises';
+import { join, resolve } from 'path';
 import { NextRequest } from 'next/server';
 import amqplib from 'amqplib';
 
@@ -24,19 +24,29 @@ export async function POST(request: NextRequest) {
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    // Save to assets folder
-    const path = join(process.cwd(), 'assets', file.name);
+    // Use configured storage directory or fallback to local workspace root
+    const workspaceRoot = resolve(process.cwd(), '../../');
+    const storageDir =
+      process.env.STORAGE_DIR || join(workspaceRoot, 'uploads');
+
+    // Ensure directory exists
+    await mkdir(storageDir, { recursive: true });
+
+    const path = join(storageDir, file.name);
     await writeFile(path, buffer);
 
     const rabbitmqUrl = process.env.RABBITMQ_URL || 'amqp://localhost';
     const connection = await amqplib.connect(rabbitmqUrl);
-    const channel = await connection.createChannel();
+    const channel = await connection.createConfirmChannel();
     await channel.assertQueue('fill_vector_store', { durable: false });
+
     channel.sendToQueue(
       'fill_vector_store',
-      Buffer.from(JSON.stringify({ file: file.name })),
+      Buffer.from(JSON.stringify({ file: path })),
       { persistent: true },
     );
+
+    await channel.waitForConfirms();
     await connection.close();
 
     return Response.json({

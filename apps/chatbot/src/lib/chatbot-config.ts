@@ -1,6 +1,6 @@
 import { ChatbotConfig } from '../types/chat';
 import { GoogleGenAIEmbeddings } from './GoogleGeminiAiEmbeddings';
-import { env } from '../utils/env';
+import { env } from '@common';
 import { BaseChatModel } from '@langchain/core/language_models/chat_models';
 import { Embeddings } from '@langchain/core/embeddings';
 import { OllamaEmbeddings } from '@langchain/ollama';
@@ -21,7 +21,7 @@ export const chatbotConfigMap: Record<
     getRetriever: (embeddings: Embeddings) => BaseRetriever;
   }
 > = {
-  'supabase-gemini-openai': {
+  'supabase-gemini': {
     getLlm: () =>
       new ChatGoogleGenerativeAI({
         apiKey: env.GOOGLE_API_KEY,

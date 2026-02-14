@@ -166,7 +166,7 @@ export default function Home() {
           <div className="flex gap-4">
             <button
               onClick={() =>
-                isCloudEnabled && handleConfigSelect('supabase-gemini-openai')
+                isCloudEnabled && handleConfigSelect('supabase-gemini')
               }
               disabled={!isCloudEnabled}
               className={`group relative flex flex-col items-center px-8 py-4 rounded-2xl bg-slate-800 border border-slate-700 transition-all duration-300 ${

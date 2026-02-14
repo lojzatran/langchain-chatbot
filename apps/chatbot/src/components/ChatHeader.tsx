@@ -14,7 +14,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({ config }) => {
           AI Chat Assistant
         </h1>
         <Link
-          href="/chatbot"
+          href="/chatbot/upload"
           className="text-[10px] text-slate-500 hover:text-purple-400 font-bold uppercase tracking-wider transition-colors mt-1"
         >
           Upload Knowledge &rarr;
@@ -23,8 +23,8 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({ config }) => {
       {config && (
         <span className="px-3 py-1 rounded-full text-xs font-mono font-medium bg-slate-800 border border-slate-700 text-purple-400 flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-purple-500 animate-pulse"></span>
-          {config === 'supabase-gemini-openai'
-            ? 'SUPABASE + GEMINI + OPENAI'
+          {config === 'supabase-gemini'
+            ? 'SUPABASE + GEMINI'
             : 'UPSTASH + GEMINI + OLLAMA'}
         </span>
       )}

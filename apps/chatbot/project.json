@@ -26,6 +26,12 @@
         "cwd": "apps/chatbot"
       }
     },
+    "serve": {
+      "command": "tsx server.ts",
+      "options": {
+        "cwd": "apps/chatbot"
+      }
+    },
     "start": {
       "command": "NODE_ENV=production node ../../dist/apps/chatbot/server.cjs",
       "options": {

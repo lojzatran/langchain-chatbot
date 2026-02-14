@@ -12,4 +12,4 @@ export interface ChatSession {
   config: ChatbotConfig;
 }
 
-export type ChatbotConfig = 'supabase-gemini-openai' | 'upstash-gemma3-nomic';
+export type ChatbotConfig = 'supabase-gemini' | 'upstash-gemma3-nomic';
