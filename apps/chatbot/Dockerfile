@@ -27,9 +27,6 @@ ENV NODE_ENV=production
 ENV PORT 8080
 ENV HOSTNAME "0.0.0.0"
 
-# Install Node.js and necessary tools
-RUN apk add --no-cache nodejs npm bash curl
-
 # Copy built application and node_modules
 COPY --from=builder /app ./
 

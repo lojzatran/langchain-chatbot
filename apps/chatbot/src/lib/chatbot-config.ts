@@ -11,6 +11,7 @@ import { ChatOllama } from '@langchain/ollama';
 import { getClientOrDefault } from './chatbot-client-manager';
 import { WebSocket } from 'ws';
 import { Chroma } from '@langchain/community/vectorstores/chroma';
+import { ChromaClient } from 'chromadb';
 import { ChatGoogleGenerativeAI } from '@langchain/google-genai';
 
 export const chatbotConfigMap: Record<
@@ -53,18 +54,25 @@ export const chatbotConfigMap: Record<
       new ChatOllama({
         model: 'gemma3:1b',
         temperature: 0.1,
+        baseUrl: env.OLLAMA_BASE_URL,
       }),
     getEmbeddings: () =>
       new OllamaEmbeddings({
         model: 'nomic-embed-text:latest',
+        baseUrl: env.OLLAMA_BASE_URL,
       }),
     getRetriever: (embeddings: Embeddings) => {
-      const vectorStore = new Chroma(embeddings, {
-        collectionName: 'faq-collection',
-        url: `http://${env.CHROMA_HOST}:8000`,
+      const chromaHost = env.CHROMA_HOST;
+      const chromaClient = new ChromaClient({
+        host: chromaHost,
+        port: env.CHROMA_PORT,
+        ssl: env.CHROMA_SSL,
       });
 
-      return vectorStore.asRetriever();
+      return new Chroma(embeddings, {
+        collectionName: 'faq-collection',
+        index: chromaClient,
+      }).asRetriever();
     },
   },
 };

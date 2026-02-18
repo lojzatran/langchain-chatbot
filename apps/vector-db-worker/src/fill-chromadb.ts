@@ -16,34 +16,29 @@ export const fillChromaStore = async (data: string): Promise<void> => {
 
   const embeddings = new OllamaEmbeddings({
     model: 'nomic-embed-text:latest',
+    baseUrl: env.OLLAMA_BASE_URL,
   });
 
-  const chromaHost =
-    env.CHROMA_HOST === 'localhost' ? '127.0.0.1' : env.CHROMA_HOST;
+  const chromaHost = env.CHROMA_HOST;
+
   const chromaClient = new ChromaClient({
     host: chromaHost,
     port: env.CHROMA_PORT,
     ssl: env.CHROMA_SSL,
   });
 
-  const collections = await chromaClient.getCollections([
-    {
-      name: 'faq-collection',
-    },
-  ]);
-
-  if (collections.length > 0) {
-    await chromaClient.deleteCollection({
-      name: 'faq-collection',
-    });
+  // Delete existing collection if it exists to start fresh
+  try {
+    await chromaClient.deleteCollection({ name: 'faq-collection' });
+    console.log('Existing collection deleted.');
+  } catch (e) {
+    // Collection might not exist, ignore
   }
 
-  const vectorStore = new Chroma(embeddings, {
+  const vectorStore = await Chroma.fromDocuments(chunks, embeddings, {
     collectionName: 'faq-collection',
     index: chromaClient,
   });
-
-  await vectorStore.addDocuments(chunks);
 
   console.log('ChromaDB filled successfully!');
 };

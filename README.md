@@ -1,19 +1,19 @@
 # Multi-Chain LangChain Chatbot
 
-A Next.js-powered chatbot that allows users to switch between different AI stacks (LLMs, Embeddings, and Vector Stores). It provides a flexible architecture to compare performance and capabilities across different cloud and local services. A test app is running on Railway, please contact me to get the URL + credentials.
+A Next.js-powered chatbot that allows users to switch between different AI stacks (LLMs, Embeddings, and Vector Stores). It provides a flexible architecture to compare performance and capabilities across different cloud and local services.
 
 ## Available Configurations
 
 Upon starting the chat, users can choose between two primary AI chains:
 
-1.  **Supabase + Gemini + OpenAI**:
-    - **LLM**: OpenAI `gpt-4o-mini`
+1.  **Supabase + Google Gemini (`supabase-gemini`)**:
+    - **LLM**: Google Gemini `gemini-2.5-flash-lite`
     - **Embeddings**: Google Gemini `gemini-embedding-001`
     - **Vector Store**: Supabase (PostgreSQL with `pgvector`)
-2.  **Upstash + Ollama**:
+2.  **Chroma + Ollama (`upstash-gemma3-nomic`)**:
     - **LLM**: Ollama `gemma3:1b` (Local)
     - **Embeddings**: Ollama `nomic-embed-text` (Local)
-    - **Vector Store**: Upstash Vector (Serverless)
+    - **Vector Store**: ChromaDB (Local)
 
 ---
 
@@ -21,12 +21,11 @@ Upon starting the chat, users can choose between two primary AI chains:
 
 Ensure you have the following credentials and services ready:
 
-- **Node.js**: v18 or higher.
-- **OpenAI API Key**: Required for the first configuration.
-- **Google AI Studio API Key**: Required for the first configuration (Gemini LLM and Embeddings).
-- **Supabase Project**: With the `documents` table and `match_documents` function (see [Supabase Setup](#supabase-setup)).
-- **Upstash Vector Index**: For the second configuration.
-- **Ollama models**: `gemma3:1b` and `nomic-embed-text` installed and running locally (required for local LLM and embeddings).
+- **Docker & Docker Compose**: Required for running independent services (ChromaDB, RabbitMQ, Ollama).
+- **Node.js**: v22 or higher recommended.
+- **Google AI Studio API Key**: Required for the Gemini configuration.
+- **Supabase Project**: Required for the Supabase configuration (with `pgvector` enabled).
+- **Ollama**: Installed and running locally for local models.
 
 ---
 
@@ -50,17 +49,13 @@ npm install
 Create a `.env` file in the root directory:
 
 ```env
-# Shared
+# Required settings
 GOOGLE_API_KEY=your_google_api_key
-OPENAI_API_KEY=your_openai_api_key
-
-# Supabase (Configuration 1)
 SUPABASE_URL=your_supabase_project_url
 SUPABASE_API_KEY=your_supabase_anon_key
-
-# Upstash (Configuration 2)
-UPSTASH_VECTOR_REST_URL=your_upstash_rest_url
-UPSTASH_VECTOR_REST_TOKEN=your_upstash_token
+CHROMA_HOST=localhost
+CHROMA_PORT=8000
+RABBITMQ_URL=amqp://localhost
 
 # Optional settings
 SPLITTER_CHUNK_SIZE=1100
@@ -69,7 +64,7 @@ SPLITTER_CHUNK_OVERLAP=50
 
 ### 4. Supabase Vector Setup
 
-If using the Supabase configuration, run the following SQL in your Supabase SQL Editor to enable vector search ((https://docs.langchain.com/oss/python/integrations/vectorstores/supabase)):
+If using the Supabase configuration, run the following SQL in your Supabase SQL Editor to enable vector search:
 
 ```sql
 -- Enable the pgvector extension
@@ -80,12 +75,12 @@ create table documents (
   id uuid primary key,
   content text,
   metadata jsonb,
-  embedding vector (1536) -- 1536 is standard for many models, or 768 for Gemini
+  embedding vector (768) -- 768 for Gemini embedding-001
 );
 
 -- Create the search function
 create function match_documents (
-  query_embedding vector (1536),
+  query_embedding vector (768),
   filter jsonb default '{}'
 ) returns table (
   id uuid,
@@ -112,66 +107,58 @@ $$;
 
 ## Getting Started
 
-### 1. Prepare FAQ Data
+### 1. Start Infrastructure
 
-Place your FAQ data in `assets/faq.txt`.
-
-### 2. Fill Vector Stores
-
-You need to index your data based on which configuration you plan to use.
-
-**For Supabase + Gemini:**
+Use Docker Compose to launch only the supporting infrastructure (database and message broker):
 
 ```bash
-npm run fill-vector-store
+docker-compose up -d rabbitmq chromadb ollama
 ```
 
-**For Upstash + Ollama:**
+### 2. Run the application locally
+
+To run the chatbot and the background worker simultaneously:
 
 ```bash
-npm run fill-vector-store-ollama
+npm run dev:all
 ```
 
-### 3. Run the Application
+Alternatively, run individually:
 
-Open [http://localhost:8080](http://localhost:8080).
+- Chatbot: `nx dev chatbot`
+- Worker: `nx serve vector-db-worker`
+
+The application will be available at [http://localhost:8080](http://localhost:8080).
+
+---
+
+## Knowledge Management
+
+Instead of manual scripts, you can now manage knowledge base directly through the UI:
+
+1.  Click **Upload Knowledge** in the chat interface header.
+2.  Select and upload a `.txt` file.
+3.  The **Chatbot** app saves the file to `uploads/` and notifies the **Vector DB Worker** via RabbitMQ.
+4.  The worker processes the file, splits it into chunks, and indexes it into **ChromaDB**.
+
+---
 
 ## Usage
 
-Once the server is running, you can use the chat interface to ask questions about the company. The assistant will:
+Once the services are active, you can:
 
-1. Convert your query into a standalone question.
-2. Search the Supabase vector store for relevant context from the FAQ.
-3. Generate a helpful response using OpenAI's GPT-4o-mini, incorporating the retrieved context.
+1. Select your preferred **AI Configuration**.
+2. Chat with the assistant.
+3. The system will retrieve context from the selected vector store (Supabase or Chroma) and generate responses using the selected LLM (Gemini or Ollama).
 
-If the answer isn't found in the provided context, the assistant will politely inform you and suggest contacting the support team.
+---
 
 ## Docker Deployment
 
-You can run the entire application using Docker.
-
-### 1. Using Docker Compose (Recommended)
-
-The easiest way to run the app is with Docker Compose, which handles the build process and environment variables automatically.
+Use Docker Compose to run the full production stack:
 
 ```bash
 docker-compose up --build
-```
-
-The application will be available at `http://localhost:8080` (or the port specified in the Dockerfile).
-
-### 2. Using Docker Directly
-
-**Build the image:**
-
-```bash
-docker build -t langchain-chatbot .
-```
-
-**Run the container:**
-
-```bash
-docker run -p 8080:8080 --env-file .env langchain-chatbot
 ```
 
 ---
@@ -179,10 +166,26 @@ docker run -p 8080:8080 --env-file .env langchain-chatbot
 ## Technologies Used
 
 - **Framework**: Next.js 16 (App Router)
+- **Monorepo Management**: Nx
 - **Orchestration**: LangChain.js
-- **LLMs**: OpenAI GPT-4o-mini, Ollama gemma3:1b (Local)
-- **Embeddings**: Google Gemini, Ollama (Local)
-- **Vector Databases**: Supabase, Upstash Vector
+- **Background Processing**: RabbitMQ + Node.js Worker
+- **Vector Databases**: ChromaDB (Local), Supabase (PostgreSQL with `pgvector`)
+- **LLMs**: Google Gemini 2.5 Flash Lite, Ollama (Local)
+- **Embeddings**: Google Gemini, Ollama (Nomic)
 - **Real-time**: WebSockets for streaming responses
 - **Validation**: Zod
-- **Styling**: Tailwind CSS with custom premium UI components
+- **Infrastructure**: Docker, Nginx (Load Balancing)
+- **Styling**: Tailwind CSS 4
+
+---
+
+## FAQ
+
+### Why are dependencies installed in Docker instead of being bundled by esbuild?
+
+While `esbuild` can bundle dependencies into a single file, we keep them external (via `npm install --omit=dev` in the Dockerfile) for several reasons:
+
+1.  **Native Modules**: Libraries with C++ bindings (like certain database drivers) cannot be bundled and must exist in `node_modules`.
+2.  **Reliability**: Bundlers can sometimes skip files loaded via dynamic `require()` calls, leading to runtime errors. For example, in this project, **`amqplib`** is marked as an external dependency in the `project.json` and must be installed via `npm install` in the final Docker stage to be found by Node.js.
+3.  **Docker Caching**: Installing dependencies in a separate Docker layer allows for much faster builds when only the source code changes.
+4.  **Best Practices**: This is the industry standard for production Node.js applications, ensuring better compatibility and easier debugging.

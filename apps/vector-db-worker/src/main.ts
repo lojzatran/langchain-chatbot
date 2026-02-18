@@ -9,6 +9,8 @@ const main = async () => {
   const channel = await connection.createChannel();
   await channel.assertQueue('fill_vector_store', { durable: false });
 
+  console.log('Worker is ready...');
+
   channel.consume('fill_vector_store', async (msg) => {
     if (msg) {
       let content;

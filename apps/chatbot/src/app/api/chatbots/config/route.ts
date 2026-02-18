@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
     const path = join(storageDir, file.name);
     await writeFile(path, buffer);
 
-    const rabbitmqUrl = process.env.RABBITMQ_URL || 'amqp://localhost';
+    const rabbitmqUrl = env.RABBITMQ_URL;
     const connection = await amqplib.connect(rabbitmqUrl);
     const channel = await connection.createConfirmChannel();
     await channel.assertQueue('fill_vector_store', { durable: false });

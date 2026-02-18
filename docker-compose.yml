@@ -3,17 +3,22 @@ x-chatbot-app: &chatbot-app
     dockerfile: ./apps/chatbot/Dockerfile
   env_file:
     - .env
-    - ./apps/chatbot/.env
   environment:
     - NODE_ENV=production
     - CHROMA_HOST=chromadb
     - OLLAMA_BASE_URL=http://ollama:11434
     - RABBITMQ_URL=amqp://rabbitmq
+    - STORAGE_DIR=/app/uploads
+  volumes:
+    - uploads:/app/uploads
   tty: true
   depends_on:
-    - chromadb
-    - ollama
-    - rabbitmq
+    chromadb:
+      condition: service_started
+    ollama:
+      condition: service_started
+    rabbitmq:
+      condition: service_healthy
 
 services:
   chromadb:
@@ -26,6 +31,14 @@ services:
     ports:
       - '5672:5672'
       - '15672:15672'
+    environment:
+      - RABBITMQ_ERLANG_COOKIE=a_very_long_secret_cookie_for_rabbitmq_4_0
+    healthcheck:
+      test: ['CMD', 'rabbitmq-diagnostics', '-q', 'ping']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
   ollama:
     build:
@@ -41,6 +54,13 @@ services:
   app2:
     <<: *chatbot-app
 
+  worker:
+    <<: *chatbot-app
+    build:
+      dockerfile: ./apps/vector-db-worker/Dockerfile
+    env_file:
+      - .env
+
   nginx:
     build:
       dockerfile: nginx.Dockerfile
@@ -55,3 +75,4 @@ services:
 
 volumes:
   ollama_data:
+  uploads:
