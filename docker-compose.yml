@@ -1,4 +1,5 @@
 x-chatbot-app: &chatbot-app
+  image: chatbot-app
   build:
     dockerfile: ./apps/chatbot/Dockerfile
   env_file:
@@ -56,6 +57,7 @@ services:
 
   worker:
     <<: *chatbot-app
+    image: vector-db-worker
     build:
       dockerfile: ./apps/vector-db-worker/Dockerfile
     env_file:
