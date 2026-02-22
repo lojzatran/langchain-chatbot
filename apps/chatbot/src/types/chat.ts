@@ -7,9 +7,16 @@ export interface Message {
 }
 
 export interface ChatSession {
-  chatHistory: { user: string; ai: string }[];
-  timeout: NodeJS.Timeout | null;
-  config: ChatbotConfig;
+  setConfig(config: ChatbotConfig): void;
+  handleAnswer(content: string): void;
 }
 
-export type ChatbotConfig = 'supabase-gemini' | 'upstash-gemma3-nomic';
+export enum ChatbotConfig {
+  SUPABASE_GEMINI = 'supabase-gemini',
+  CHROMA_GEMMA3_NOMIC = 'chroma-gemma3-nomic',
+}
+
+export interface ChatMessage {
+  user: string;
+  ai: string;
+}

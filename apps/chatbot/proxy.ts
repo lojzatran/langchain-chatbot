@@ -7,7 +7,6 @@ export const config = {
 export function proxy(req: NextRequest) {
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0] || 'unknown';
   console.log('Middleware IP:', ip);
-  const url = req.nextUrl;
 
   if (process.env.NODE_ENV === 'development') {
     return NextResponse.next();

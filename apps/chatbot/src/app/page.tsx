@@ -17,7 +17,6 @@ export default function Home() {
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [isStreaming, setIsStreaming] = useState(false);
   const [config, setConfig] = useState<string | null>(null);
   const [isCloudEnabled, setIsCloudEnabled] = useState(true);
   const webSocket = useWebSocket();
@@ -100,7 +99,6 @@ export default function Home() {
 
         if (parsedData.type === 'chunk') {
           setIsLoading(false);
-          setIsStreaming(true);
           setMessages((prev) => {
             const lastMessage = prev[prev.length - 1];
             console.log(lastMessage);
@@ -125,8 +123,6 @@ export default function Home() {
               ];
             }
           });
-        } else if (parsedData.type === 'end') {
-          setIsStreaming(false);
         }
       } catch (err) {
         console.error('Error parsing message: ', err, event.data);
@@ -143,7 +139,6 @@ export default function Home() {
         } as Message,
       ]);
       setIsLoading(false);
-      setIsStreaming(false);
     };
   }, [webSocket, isLoading]);
 
@@ -166,7 +161,8 @@ export default function Home() {
           <div className="flex gap-4">
             <button
               onClick={() =>
-                isCloudEnabled && handleConfigSelect('supabase-gemini')
+                isCloudEnabled &&
+                handleConfigSelect(ChatbotConfig.SUPABASE_GEMINI)
               }
               disabled={!isCloudEnabled}
               className={`group relative flex flex-col items-center px-8 py-4 rounded-2xl bg-slate-800 border border-slate-700 transition-all duration-300 ${
@@ -190,7 +186,9 @@ export default function Home() {
               )}
             </button>
             <button
-              onClick={() => handleConfigSelect('upstash-gemma3-nomic')}
+              onClick={() =>
+                handleConfigSelect(ChatbotConfig.CHROMA_GEMMA3_NOMIC)
+              }
               className="group relative flex flex-col items-center px-8 py-4 rounded-2xl bg-slate-800 hover:bg-slate-700 border border-slate-700 transition-all duration-300 hover:border-emerald-500/50 hover:shadow-[0_0_20px_rgba(16,185,129,0.15)] active:scale-95"
             >
               <span className="text-emerald-400 font-bold mb-1">
