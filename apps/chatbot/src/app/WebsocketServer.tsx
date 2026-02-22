@@ -1,15 +1,14 @@
 import { WebSocketServer, WebSocket } from 'ws';
 import { IncomingMessage } from 'http';
 import { Duplex } from 'stream';
-import { streamAnswer } from '../lib/chatbot-langchain';
 import {
   getClientOrDefault,
   removeClient,
 } from '../lib/chatbot-client-manager';
+import { ChatSession } from '../types/chat';
 
 export default class ChatbotWebsocketServer {
   private wss: WebSocketServer;
-  private readonly TEN_MINUTES_IN_MS = 10 * 60 * 1000;
 
   constructor() {
     this.wss = new WebSocketServer({ noServer: true });
@@ -20,26 +19,7 @@ export default class ChatbotWebsocketServer {
       console.log('Client connected');
 
       ws.on('message', async (messageBuffer: Buffer) => {
-        try {
-          const message = JSON.parse(messageBuffer.toString());
-          console.log('Client message: ', message);
-
-          if (message.type === 'config') {
-            const chatSession = getClientOrDefault(ws);
-            chatSession.config = message.config;
-            console.log(`Config updated for client to: ${message.config}`);
-            return;
-          }
-
-          const chatSession = getClientOrDefault(ws);
-          const content = message.content;
-          if (content?.length > 0) {
-            await streamAnswer(ws, content, chatSession.chatHistory);
-            chatSession.timeout = this.setReminder(ws, chatSession.timeout);
-          }
-        } catch (error) {
-          console.error('WebSocket message error:', error);
-        }
+        this.processMessageBuffer(ws, messageBuffer);
       });
 
       ws.on('close', () => {
@@ -49,21 +29,25 @@ export default class ChatbotWebsocketServer {
     });
   }
 
-  private setReminder(
-    client: WebSocket,
-    oldTimeout: NodeJS.Timeout | null | undefined,
-  ) {
-    if (oldTimeout) {
-      clearTimeout(oldTimeout);
+  processMessageBuffer(ws: WebSocket, messageBuffer: Buffer) {
+    try {
+      const message = JSON.parse(messageBuffer.toString());
+      console.log('Client message: ', message);
+      const chatSession: ChatSession = getClientOrDefault(ws);
+
+      if (message.type === 'config') {
+        chatSession.setConfig(message.config);
+        console.log(`Config updated for client to: ${message.config}`);
+        return;
+      }
+
+      const content = message.content;
+      if (content?.length > 0) {
+        chatSession.handleAnswer(content);
+      }
+    } catch (error) {
+      console.error('WebSocket message error:', error);
     }
-    return setTimeout(() => {
-      client.send(
-        JSON.stringify({
-          type: 'system',
-          content: 'Hey, are you still here?',
-        }),
-      );
-    }, this.TEN_MINUTES_IN_MS);
   }
 
   handleUpgrade(req: IncomingMessage, socket: Duplex, head: Buffer) {

@@ -17,7 +17,6 @@ export default function Home() {
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [isStreaming, setIsStreaming] = useState(false);
   const [config, setConfig] = useState<string | null>(null);
   const [isCloudEnabled, setIsCloudEnabled] = useState(true);
   const webSocket = useWebSocket();
@@ -100,7 +99,6 @@ export default function Home() {
 
         if (parsedData.type === 'chunk') {
           setIsLoading(false);
-          setIsStreaming(true);
           setMessages((prev) => {
             const lastMessage = prev[prev.length - 1];
             console.log(lastMessage);
@@ -125,8 +123,6 @@ export default function Home() {
               ];
             }
           });
-        } else if (parsedData.type === 'end') {
-          setIsStreaming(false);
         }
       } catch (err) {
         console.error('Error parsing message: ', err, event.data);
@@ -143,7 +139,6 @@ export default function Home() {
         } as Message,
       ]);
       setIsLoading(false);
-      setIsStreaming(false);
     };
   }, [webSocket, isLoading]);
 

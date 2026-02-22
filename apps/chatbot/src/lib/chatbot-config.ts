@@ -77,17 +77,14 @@ export const chatbotConfigMap: Record<
   },
 };
 
-const getEmbeddings = (ws: WebSocket) => {
-  const client = getClientOrDefault(ws);
-  return chatbotConfigMap[client.config].getEmbeddings();
+export const getEmbeddings = (config: ChatbotConfig) => {
+  return chatbotConfigMap[config].getEmbeddings();
 };
 
-export const getLlm = (ws: WebSocket) => {
-  const client = getClientOrDefault(ws);
-  return chatbotConfigMap[client.config].getLlm();
+export const getLlm = (config: ChatbotConfig) => {
+  return chatbotConfigMap[config].getLlm();
 };
 
-export const getRetriever = (ws: WebSocket) => {
-  const client = getClientOrDefault(ws);
-  return chatbotConfigMap[client.config].getRetriever(getEmbeddings(ws));
+export const getRetriever = (config: ChatbotConfig) => {
+  return chatbotConfigMap[config].getRetriever(getEmbeddings(config));
 };
