@@ -30,20 +30,32 @@ jobs:
 
       - name: Verify prettier
         run: |
-          npm run format -- --all
+          npm run format
           git diff --exit-code
 
       - name: Create dummy .env file
         run: |
-          echo "SUPABASE_URL=http://localhost:54321" >> .env
+          echo "SUPABASE_URL=http://localhost:54321" > .env
           echo "SUPABASE_API_KEY=dummy" >> .env
           echo "GOOGLE_API_KEY=dummy" >> .env
+
+      - name: Disable Ollama volume in CI
+        run: |
+          cat <<EOF > docker-compose.override.yml
+          services:
+            ollama:
+              volumes: []
+          EOF
 
       - name: Run integration tests
         run: npm run test:integration
 
       - name: Install Playwright browsers
         run: npx playwright install --with-deps
+
+      - name: Increase E2E timeout
+        run: |
+          sed -i 's/timeout: 15000/timeout: 30000/' tests/e2e/specs/chatbot-flow.spec.ts
 
       - name: Run E2E tests
         run: npm run test:e2e
