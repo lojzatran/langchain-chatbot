@@ -8,10 +8,10 @@
     "dev:all": "nx run-many -t serve -p vector-db-worker chatbot --parallel=true",
     "build": "nx build chatbot",
     "start": "nx start chatbot",
-    "fill-vector-store": "tsx apps/chatbot/scripts/fill-vector-store.ts",
-    "fill-vector-store-ollama": "tsx apps/chatbot/scripts/fill-vector-store-ollama.ts",
     "lint": "nx run-many -t lint",
-    "format": "nx format:write"
+    "format": "nx format:write",
+    "test:integration": "jest --config tests/integration/jest.config.cjs --runInBand",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@langchain/community": "^1.1.15",
@@ -42,6 +42,7 @@
     "@nx/next": "^22.5.0",
     "@nx/node": "^22.5.0",
     "@nx/react": "^22.5.0",
+    "@playwright/test": "^1.58.2",
     "@swc-node/register": "^1.11.1",
     "@swc/cli": "~0.8.0",
     "@swc/core": "^1.15.8",

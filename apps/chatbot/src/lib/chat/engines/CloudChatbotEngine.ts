@@ -7,10 +7,13 @@ import { createClient } from '@supabase/supabase-js';
 import { SupabaseVectorStore } from '@langchain/community/vectorstores/supabase';
 import { GoogleGenerativeAIEmbeddings } from '@langchain/google-genai';
 
+import { CHATBOT_CONSTANTS } from '../../constants';
+
 export default class CloudChatbotEngine extends ChatbotEngine {
-  private CHAT_MODEL = 'gemini-2.5-flash-lite';
-  private EMBEDDING_MODEL = 'gemini-embedding-001';
-  private TABLE_NAME = 'documents';
+  private CHAT_MODEL = CHATBOT_CONSTANTS.MODELS.CLOUD.CHAT;
+  private EMBEDDING_MODEL = CHATBOT_CONSTANTS.MODELS.CLOUD.EMBEDDING;
+  private TABLE_NAME = CHATBOT_CONSTANTS.MODELS.CLOUD.TABLE;
+  private QUERY_NAME = CHATBOT_CONSTANTS.MODELS.CLOUD.QUERY_NAME;
 
   protected createLlm(): BaseChatModel {
     return new ChatGoogleGenerativeAI({
@@ -31,7 +34,7 @@ export default class CloudChatbotEngine extends ChatbotEngine {
     const vectorStore = new SupabaseVectorStore(embeddings, {
       client: supabaseClient,
       tableName: this.TABLE_NAME,
-      queryName: 'match_documents',
+      queryName: this.QUERY_NAME,
     });
 
     return vectorStore.asRetriever();

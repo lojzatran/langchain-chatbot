@@ -55,7 +55,7 @@ export default abstract class ChatbotEngine {
     try {
       const chain = this.createRunnableSequenceChain();
 
-      let answer = await this.streamAnswerToWs(chain, question, chatHistory);
+      const answer = await this.streamAnswerToWs(chain, question, chatHistory);
 
       // Persist the interaction to history
       chatHistory.push({

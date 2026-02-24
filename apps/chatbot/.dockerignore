@@ -11,3 +11,7 @@ yarn-error.log*
 docker-compose.yml
 Dockerfile
 .dockerignore
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/

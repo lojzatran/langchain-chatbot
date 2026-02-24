@@ -3,6 +3,7 @@ import { parse } from 'url';
 import next from 'next';
 import { Duplex } from 'stream';
 import ChatbotWebsocketServer from './src/app/WebsocketServer';
+import WebsocketClientsManager from './src/lib/WebsocketClientsManager';
 
 const port = parseInt(process.env.PORT || '8080', 10);
 const dev = process.env.NODE_ENV !== 'production';
@@ -15,7 +16,8 @@ app.prepare().then(() => {
     handle(req, res, parsedUrl);
   }).listen(port);
 
-  const websocketServer = new ChatbotWebsocketServer();
+  const clientsManager = new WebsocketClientsManager();
+  const websocketServer = new ChatbotWebsocketServer(clientsManager);
   websocketServer.start();
 
   server.on('upgrade', (req: IncomingMessage, socket: Duplex, head: Buffer) => {

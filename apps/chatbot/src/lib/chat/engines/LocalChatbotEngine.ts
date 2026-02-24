@@ -7,10 +7,12 @@ import { ChromaClient } from 'chromadb';
 import { OllamaEmbeddings } from '@langchain/ollama';
 import { env } from '@common';
 
+import { CHATBOT_CONSTANTS } from '../../constants';
+
 export default class LocalChatbotEngine extends ChatbotEngine {
-  private CHAT_MODEL = 'gemma3:1b';
-  private EMBEDDING_MODEL = 'nomic-embed-text:latest';
-  private COLLECTION_NAME = 'faq-collection';
+  private CHAT_MODEL = CHATBOT_CONSTANTS.MODELS.LOCAL.CHAT;
+  private EMBEDDING_MODEL = CHATBOT_CONSTANTS.MODELS.LOCAL.EMBEDDING;
+  private COLLECTION_NAME = CHATBOT_CONSTANTS.MODELS.LOCAL.COLLECTION;
 
   protected createLlm(): BaseChatModel {
     return new ChatOllama({

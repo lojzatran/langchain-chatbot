@@ -2,6 +2,13 @@
 
 A Next.js-powered chatbot that allows users to switch between different AI stacks (LLMs, Embeddings, and Vector Stores). It provides a flexible architecture to compare performance and capabilities across different cloud and local services.
 
+## Current Status
+
+- Supports runtime AI-engine switching over WebSocket per chat session.
+- Supports knowledge upload from UI (`/chatbot/upload`) and async indexing via RabbitMQ worker.
+- Provides both cloud (`supabase-gemini`) and local (`chroma-gemma3-nomic`) retrieval + generation paths.
+- Includes automated integration and end-to-end test coverage.
+
 ## Available Configurations
 
 Upon starting the chat, users can choose between two primary AI chains:
@@ -10,9 +17,9 @@ Upon starting the chat, users can choose between two primary AI chains:
     - **LLM**: Google Gemini `gemini-2.5-flash-lite`
     - **Embeddings**: Google Gemini `gemini-embedding-001`
     - **Vector Store**: Supabase (PostgreSQL with `pgvector`)
-2.  **Chroma + Ollama (`upstash-gemma3-nomic`)**:
+2.  **Chroma + Ollama (`chroma-gemma3-nomic`)**:
     - **LLM**: Ollama `gemma3:1b` (Local)
-    - **Embeddings**: Ollama `nomic-embed-text` (Local)
+    - **Embeddings**: Ollama `nomic-embed-text:latest` (Local)
     - **Vector Store**: ChromaDB (Local)
 
 ---
@@ -60,6 +67,9 @@ RABBITMQ_URL=amqp://localhost
 # Optional settings
 SPLITTER_CHUNK_SIZE=1100
 SPLITTER_CHUNK_OVERLAP=50
+OLLAMA_BASE_URL=http://localhost:11434
+CHROMA_SSL=false
+STORAGE_DIR=./uploads
 ```
 
 ### 4. Supabase Vector Setup
@@ -112,7 +122,7 @@ $$;
 Use Docker Compose to launch only the supporting infrastructure (database and message broker):
 
 ```bash
-docker-compose up -d rabbitmq chromadb ollama
+docker compose up -d rabbitmq chromadb ollama
 ```
 
 ### 2. Run the application locally
@@ -158,8 +168,36 @@ Once the services are active, you can:
 Use Docker Compose to run the full production stack:
 
 ```bash
-docker-compose up --build
+docker compose up --build
 ```
+
+---
+
+## Testing
+
+The project currently has two automated test suites:
+
+### 1. Integration tests (Jest)
+
+These tests validate infrastructure-backed behavior (e.g. upload route + RabbitMQ queue publish, websocket config engine switching).
+
+```bash
+npm run test:integration
+```
+
+### 2. End-to-end tests (Playwright)
+
+These tests run the chat UI flow in a real browser against `http://localhost:8080`.
+
+```bash
+npm run test:e2e
+```
+
+Notes:
+
+- Docker must be running for both suites (`chromadb`, `rabbitmq`, and `ollama` are started by global setup).
+- Ensure your root `.env` is configured before running tests.
+- Playwright HTML report is generated in `playwright-report/`.
 
 ---
 

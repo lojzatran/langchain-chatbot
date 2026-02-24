@@ -11,4 +11,8 @@ dist
 out
 build
 docker-compose.yml
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
 
