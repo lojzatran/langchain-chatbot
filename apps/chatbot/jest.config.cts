@@ -6,7 +6,7 @@ const createJestConfig = nextJest({
 
 const config = {
   displayName: 'chatbot',
-  preset: '../../jest.preset.js',
+  preset: '../../jest.preset.cjs',
   transform: {
     '^(?!.*\\.(js|jsx|ts|tsx|css|json)$)': '@nx/react/plugins/jest',
   },

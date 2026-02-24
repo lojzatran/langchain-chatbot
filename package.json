@@ -11,7 +11,9 @@
     "fill-vector-store": "tsx apps/chatbot/scripts/fill-vector-store.ts",
     "fill-vector-store-ollama": "tsx apps/chatbot/scripts/fill-vector-store-ollama.ts",
     "lint": "nx run-many -t lint",
-    "format": "nx format:write"
+    "format": "nx format:write",
+    "test:integration": "nx run-many -t test:integration",
+    "test:e2e": "nx run-many -t test:e2e"
   },
   "dependencies": {
     "@langchain/community": "^1.1.15",

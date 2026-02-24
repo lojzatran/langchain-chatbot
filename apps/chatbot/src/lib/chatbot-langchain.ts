@@ -57,7 +57,7 @@ async function streamAnswer(
     const client = getClientOrDefault(ws);
     const chain = createRunnableSequenceChain(client.config);
 
-    let answer = await streamAnswerToWs(chain, question, chatHistory, ws);
+    const answer = await streamAnswerToWs(chain, question, chatHistory, ws);
 
     // Persist the interaction to history
     chatHistory.push({

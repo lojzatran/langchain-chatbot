@@ -44,6 +44,18 @@
       "options": {
         "cwd": "apps/chatbot"
       }
+    },
+    "test:integration": {
+      "command": "jest specs/integration.spec.ts --config jest.integration.config.cjs",
+      "options": {
+        "cwd": "apps/chatbot"
+      }
+    },
+    "test:e2e": {
+      "command": "jest specs/e2e.spec.ts --config jest.integration.config.cjs",
+      "options": {
+        "cwd": "apps/chatbot"
+      }
     }
   }
 }
