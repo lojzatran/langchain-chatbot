@@ -31,7 +31,9 @@ async function waitForRunningContainer(service) {
     await delay(RETRY_INTERVAL_MS);
   }
 
-  throw new Error(`Timed out waiting for "${service}" container to be running.`);
+  throw new Error(
+    `Timed out waiting for "${service}" container to be running.`,
+  );
 }
 
 async function waitForRabbitMqHealthy(containerId) {
@@ -79,7 +81,9 @@ module.exports = async () => {
   });
 
   const [chromaContainerId, rabbitContainerId, ollamaContainerId] =
-    await Promise.all(SERVICES.map((service) => waitForRunningContainer(service)));
+    await Promise.all(
+      SERVICES.map((service) => waitForRunningContainer(service)),
+    );
 
   await waitForRabbitMqHealthy(rabbitContainerId);
 

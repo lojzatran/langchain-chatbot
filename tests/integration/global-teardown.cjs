@@ -27,5 +27,7 @@ module.exports = async () => {
     );
   }
 
-  console.log('[integration teardown] Infrastructure services were terminated.');
+  console.log(
+    '[integration teardown] Infrastructure services were terminated.',
+  );
 };

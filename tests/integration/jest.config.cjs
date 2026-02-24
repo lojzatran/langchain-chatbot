@@ -1,10 +1,7 @@
 module.exports = {
   displayName: 'integration',
   testEnvironment: 'node',
-  testMatch: [
-    '<rootDir>/specs/**/*.test.cjs',
-    '<rootDir>/specs/**/*.test.ts',
-  ],
+  testMatch: ['<rootDir>/specs/**/*.test.cjs', '<rootDir>/specs/**/*.test.ts'],
   globalSetup: '<rootDir>/global-setup.cjs',
   globalTeardown: '<rootDir>/global-teardown.cjs',
   transform: {

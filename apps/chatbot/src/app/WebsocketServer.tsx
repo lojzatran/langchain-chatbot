@@ -32,7 +32,8 @@ export default class ChatbotWebsocketServer {
     try {
       const message = JSON.parse(messageBuffer.toString());
       console.log('Client message: ', message);
-      const chatSession: ChatSession = this.clientManager.getClientOrDefault(ws);
+      const chatSession: ChatSession =
+        this.clientManager.getClientOrDefault(ws);
 
       if (message.type === 'config') {
         this.clientManager.setSelectedConfig(ws, message.config);
