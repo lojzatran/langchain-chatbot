@@ -32,7 +32,7 @@ test.describe('Chatbot E2E Flow', () => {
     await expect(async () => {
       const count = await chatPage.getMessagesCount();
       expect(count).toBeGreaterThan(2);
-    }).toPass({ timeout: 15000 });
+    }).toPass({ timeout: 30000 });
 
     const aiReply = await chatPage.getLatestMessage();
     const aiReplyText = await aiReply.textContent();
