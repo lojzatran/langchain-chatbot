@@ -64,7 +64,7 @@ jobs:
         if: github.event_name != 'pull_request'
         uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          username: ${{ vars.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Build and push Chatbot image
@@ -75,8 +75,8 @@ jobs:
           file: apps/chatbot/Dockerfile
           push: true
           tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/chatbot-app:latest
-            ${{ secrets.DOCKERHUB_USERNAME }}/chatbot-app:${{ github.sha }}
+            ${{ vars.DOCKERHUB_USERNAME }}/chatbot-app:latest
+            ${{ vars.DOCKERHUB_USERNAME }}/chatbot-app:${{ github.sha }}
 
       - name: Build and push Vector DB Worker image
         if: github.event_name != 'pull_request'
@@ -86,5 +86,5 @@ jobs:
           file: apps/vector-db-worker/Dockerfile
           push: true
           tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/vector-db-worker:latest
-            ${{ secrets.DOCKERHUB_USERNAME }}/vector-db-worker:${{ github.sha }}
+            ${{ vars.DOCKERHUB_USERNAME }}/vector-db-worker:latest
+            ${{ vars.DOCKERHUB_USERNAME }}/vector-db-worker:${{ github.sha }}
