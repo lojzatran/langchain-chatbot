@@ -1,6 +1,9 @@
 import { Document } from '@langchain/core/documents';
 import { PromptTemplate } from '@langchain/core/prompts';
-import { RunnableSequence } from '@langchain/core/runnables';
+import {
+  RunnablePassthrough,
+  RunnableSequence,
+} from '@langchain/core/runnables';
 import { ChatbotConfig, ChatMessage } from '../../../types/chat';
 import { STANDALONE_QUESTION_TEMPLATE, ANSWER_TEMPLATE } from '../../prompts';
 import { StringOutputParser } from '@langchain/core/output_parsers';
