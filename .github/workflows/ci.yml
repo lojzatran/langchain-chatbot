@@ -39,6 +39,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       SKIP_ENV_VALIDATION: true
+      OLLAMA_CHAT_MODEL: smollm:135m
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -57,6 +58,9 @@ jobs:
           cat <<EOF > docker-compose.override.yml
           services:
             ollama:
+              build:
+                args:
+                  CHAT_MODEL: smollm:135m
               volumes: []
           EOF
 
@@ -65,6 +69,7 @@ jobs:
           echo "SUPABASE_URL=http://localhost:54321" > .env
           echo "SUPABASE_API_KEY=dummy" >> .env
           echo "GOOGLE_API_KEY=dummy" >> .env
+          echo "OLLAMA_CHAT_MODEL=smollm:135m" >> .env
 
       - name: Run integration tests
         run: npm run test:integration
@@ -73,6 +78,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       SKIP_ENV_VALIDATION: true
+      OLLAMA_CHAT_MODEL: smollm:135m
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -108,6 +114,9 @@ jobs:
           cat <<EOF > docker-compose.override.yml
           services:
             ollama:
+              build:
+                args:
+                  CHAT_MODEL: smollm:135m
               volumes: []
           EOF
 
@@ -116,6 +125,7 @@ jobs:
           echo "SUPABASE_URL=http://localhost:54321" > .env
           echo "SUPABASE_API_KEY=dummy" >> .env
           echo "GOOGLE_API_KEY=dummy" >> .env
+          echo "OLLAMA_CHAT_MODEL=smollm:135m" >> .env
 
       - name: Run E2E tests
         run: npm run test:e2e

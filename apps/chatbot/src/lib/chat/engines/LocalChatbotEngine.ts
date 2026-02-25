@@ -10,7 +10,7 @@ import { env } from '@common';
 import { CHATBOT_CONSTANTS } from '../../constants';
 
 export default class LocalChatbotEngine extends ChatbotEngine {
-  private CHAT_MODEL = CHATBOT_CONSTANTS.MODELS.LOCAL.CHAT;
+  private CHAT_MODEL = env.OLLAMA_CHAT_MODEL;
   private EMBEDDING_MODEL = CHATBOT_CONSTANTS.MODELS.LOCAL.EMBEDDING;
   private COLLECTION_NAME = CHATBOT_CONSTANTS.MODELS.LOCAL.COLLECTION;
 

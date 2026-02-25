@@ -97,8 +97,6 @@ export default abstract class ChatbotEngine {
     let answer = '';
 
     for await (const streamEvent of answerStreamEvent) {
-      console.log(streamEvent);
-      // Safety check: is the client still connected?
       if (this.ws.readyState !== WebSocket.OPEN) {
         console.warn('WebSocket closed during stream processing');
         break;

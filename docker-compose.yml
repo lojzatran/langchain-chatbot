@@ -15,9 +15,9 @@ x-chatbot-app: &chatbot-app
   tty: true
   depends_on:
     chromadb:
-      condition: service_started
+      condition: service_healthy
     ollama:
-      condition: service_started
+      condition: service_healthy
     rabbitmq:
       condition: service_healthy
 
@@ -26,6 +26,11 @@ services:
     image: chromadb/chroma
     ports:
       - '8000:8000'
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:8000/api/v2/heartbeat']
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
   rabbitmq:
     image: rabbitmq:4.2.3-management-alpine
@@ -48,6 +53,12 @@ services:
       - '11434:11434'
     volumes:
       - ollama_data:/root/.ollama
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:11434/api/tags']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
 
   app1:
     <<: *chatbot-app
