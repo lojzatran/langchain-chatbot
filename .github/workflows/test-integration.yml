@@ -36,13 +36,7 @@ jobs:
       - name: Create dummy .env file
         run: |
           echo "SUPABASE_URL=http://localhost:54321" > .env
-          echo "SUPABASE_API_KEY=dummy" >> .env
-          echo "GOOGLE_API_KEY=dummy" >> .env
-          echo "CHROMA_HOST=localhost" >> .env
-          echo "CHROMA_PORT=8000" >> .env
-          echo "CHROMA_SSL=false" >> .env
-          echo "RABBITMQ_URL=amqp://localhost" >> .env
-          echo "OLLAMA_BASE_URL=http://localhost:11434" >> .env
+          echo "SUPABASE_API_KEY=dummy" >> .env          
           echo "OLLAMA_CHAT_MODEL=smollm:135m" >> .env
 
       - name: Run integration tests
