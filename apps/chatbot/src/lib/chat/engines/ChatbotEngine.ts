@@ -1,9 +1,6 @@
 import { Document } from '@langchain/core/documents';
 import { PromptTemplate } from '@langchain/core/prompts';
-import {
-  RunnablePassthrough,
-  RunnableSequence,
-} from '@langchain/core/runnables';
+import { RunnableSequence } from '@langchain/core/runnables';
 import { ChatbotConfig, ChatMessage } from '../../../types/chat';
 import { STANDALONE_QUESTION_TEMPLATE, ANSWER_TEMPLATE } from '../../prompts';
 import { StringOutputParser } from '@langchain/core/output_parsers';
@@ -63,8 +60,30 @@ export default abstract class ChatbotEngine {
         ai: answer,
       });
     } catch (error) {
+      if (this.isClientDisconnectAbort(error)) {
+        console.warn('Streaming stopped because the client disconnected.');
+        return;
+      }
       this.handleError(error);
     }
+  }
+
+  private isClientDisconnectAbort(error: unknown): boolean {
+    if (this.ws.readyState === WebSocket.OPEN) {
+      return false;
+    }
+
+    if (!(error instanceof Error)) {
+      return false;
+    }
+
+    if (error.name === 'AbortError') {
+      return true;
+    }
+
+    const socketCode = (error as Error & { cause?: { code?: string } }).cause
+      ?.code;
+    return socketCode === 'UND_ERR_SOCKET';
   }
 
   private handleError(error: unknown) {
@@ -85,7 +104,7 @@ export default abstract class ChatbotEngine {
   }
 
   private async streamAnswerToWs(
-    chain: RunnableSequence<ChainInput, any>,
+    chain: RunnableSequence<ChainInput, unknown>,
     question: string,
     chatHistory: ChatMessage[],
   ) {
@@ -122,19 +141,29 @@ export default abstract class ChatbotEngine {
   private createRunnableSequenceChain() {
     const llm = this.getLlm();
     const retriever = this.getRetriever();
-    const retrieverChain = RunnableSequence.from([
+    const standaloneQuestionChain = RunnableSequence.from([
       this.standaloneQuestionPrompt,
       llm,
       new StringOutputParser(),
-      retriever,
-      this.formatDocuments,
     ]);
 
     const chain = RunnableSequence.from([
       {
-        context: (input: ChainInput) =>
-          retrieverChain.invoke({ question: input.question }),
-        question: new RunnablePassthrough(),
+        context: async (input: ChainInput) => {
+          // Skip rewrite on first turn to reduce latency and avoid extra LLM hop.
+          const retrievalQuestion =
+            input.chatHistory.length === 0
+              ? input.question
+              : await standaloneQuestionChain.invoke({
+                  question: input.question,
+                });
+
+          const docs = (await retriever.invoke(
+            retrievalQuestion,
+          )) as Document[];
+          return this.formatDocuments(docs);
+        },
+        question: (input: ChainInput) => input.question,
         chatHistory: (input: ChainInput) =>
           this.formatChatHistory(input.chatHistory),
       },

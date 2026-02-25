@@ -1,0 +1,60 @@
+name: Docker Build and Push
+
+on:
+  workflow_call:
+
+jobs:
+  docker-build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ vars.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Metadata for Chatbot
+        id: meta-chatbot
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ vars.DOCKERHUB_USERNAME }}/chatbot-app
+          tags: |
+            type=raw,value=latest
+            type=sha,prefix=
+
+      - name: Build and push Chatbot image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/chatbot/Dockerfile
+          push: true
+          tags: ${{ steps.meta-chatbot.outputs.tags }}
+          labels: ${{ steps.meta-chatbot.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Metadata for Vector DB Worker
+        id: meta-worker
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ vars.DOCKERHUB_USERNAME }}/vector-db-worker
+          tags: |
+            type=raw,value=latest
+            type=sha,prefix=
+
+      - name: Build and push Vector DB Worker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/vector-db-worker/Dockerfile
+          push: true
+          tags: ${{ steps.meta-worker.outputs.tags }}
+          labels: ${{ steps.meta-worker.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

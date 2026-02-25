@@ -6,6 +6,19 @@ import { z } from 'zod';
 loadDotEnv({ path: resolve(process.cwd(), '../../.env') });
 loadDotEnv({ path: '.env', override: true });
 
+const booleanFromEnv = z.preprocess((value) => {
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase();
+    if (normalized === 'true') {
+      return true;
+    }
+    if (normalized === 'false') {
+      return false;
+    }
+  }
+  return value;
+}, z.boolean());
+
 const envSchema = z.object({
   GOOGLE_API_KEY: z.string().optional(),
   SPLITTER_CHUNK_SIZE: z.coerce.number().default(1100),
@@ -14,14 +27,21 @@ const envSchema = z.object({
   SUPABASE_API_KEY: z.string(),
   CHROMA_HOST: z.string().default('localhost'),
   CHROMA_PORT: z.coerce.number().default(8000),
-  CHROMA_SSL: z.boolean().default(false),
+  CHROMA_SSL: booleanFromEnv.default(false),
   RABBITMQ_URL: z.string().default('amqp://localhost'),
   OLLAMA_BASE_URL: z.string().default('http://localhost:11434'),
   OLLAMA_CHAT_MODEL: z.string().default('gemma3:1b'),
 });
 
+const relaxedEnvSchema = envSchema.extend({
+  SUPABASE_URL: z.string().url().optional(),
+  SUPABASE_API_KEY: z.string().optional(),
+});
+
 const skipValidation = process.env.SKIP_ENV_VALIDATION === 'true';
 
-export const env = skipValidation
-  ? (process.env as unknown as z.infer<typeof envSchema>)
-  : envSchema.parse(process.env);
+export const env = (
+  skipValidation
+    ? relaxedEnvSchema.parse(process.env)
+    : envSchema.parse(process.env)
+) as z.infer<typeof envSchema>;
