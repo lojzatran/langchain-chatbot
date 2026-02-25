@@ -56,7 +56,12 @@ jobs:
           echo "SUPABASE_API_KEY=dummy" >> .env
           echo "OLLAMA_CHAT_MODEL=smollm:135m" >> .env
 
+      - name: Start E2E infrastructure
+        run: npm run test:e2e:setup
+
       - name: Run E2E tests
+        env:
+          E2E_INFRA_ALREADY_STARTED: 'true'
         run: npm run test:e2e
 
       - name: Upload Playwright report
