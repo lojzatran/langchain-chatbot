@@ -141,29 +141,19 @@ export default abstract class ChatbotEngine {
   private createRunnableSequenceChain() {
     const llm = this.getLlm();
     const retriever = this.getRetriever();
-    const standaloneQuestionChain = RunnableSequence.from([
+    const retrieverChain = RunnableSequence.from([
       this.standaloneQuestionPrompt,
       llm,
       new StringOutputParser(),
+      retriever,
+      this.formatDocuments,
     ]);
 
     const chain = RunnableSequence.from([
       {
-        context: async (input: ChainInput) => {
-          // Skip rewrite on first turn to reduce latency and avoid extra LLM hop.
-          const retrievalQuestion =
-            input.chatHistory.length === 0
-              ? input.question
-              : await standaloneQuestionChain.invoke({
-                  question: input.question,
-                });
-
-          const docs = (await retriever.invoke(
-            retrievalQuestion,
-          )) as Document[];
-          return this.formatDocuments(docs);
-        },
-        question: (input: ChainInput) => input.question,
+        context: (input: ChainInput) =>
+          retrieverChain.invoke({ question: input.question }),
+        question: new RunnablePassthrough(),
         chatHistory: (input: ChainInput) =>
           this.formatChatHistory(input.chatHistory),
       },
