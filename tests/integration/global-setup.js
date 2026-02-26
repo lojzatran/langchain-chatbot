@@ -1,5 +1,5 @@
-const { execSync } = require('node:child_process');
-const { setTimeout: delay } = require('node:timers/promises');
+import { execSync } from 'node:child_process';
+import { setTimeout as delay } from 'node:timers/promises';
 
 const SERVICES = ['chromadb', 'rabbitmq', 'ollama'];
 const START_TIMEOUT_MS = 120_000;
@@ -69,7 +69,7 @@ async function waitForCommand(command, label) {
   throw new Error(`Timed out waiting for ${label}.`);
 }
 
-module.exports = async () => {
+export default async function globalSetup() {
   console.log(
     '[integration setup] Starting infrastructure services: chromadb, rabbitmq, ollama',
   );
@@ -97,4 +97,4 @@ module.exports = async () => {
   console.log(
     `[integration setup] Services are ready (chroma=${chromaContainerId.slice(0, 12)}, rabbitmq=${rabbitContainerId.slice(0, 12)}, ollama=${ollamaContainerId.slice(0, 12)})`,
   );
-};
+}

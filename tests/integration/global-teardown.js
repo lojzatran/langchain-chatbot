@@ -1,4 +1,4 @@
-const { execSync } = require('node:child_process');
+import { execSync } from 'node:child_process';
 
 const SERVICES = ['chromadb', 'rabbitmq', 'ollama'];
 
@@ -6,7 +6,7 @@ function run(command) {
   execSync(command, { stdio: 'inherit' });
 }
 
-module.exports = async () => {
+export default async function globalTeardown() {
   console.log(
     '[integration teardown] Killing infrastructure services: chromadb, rabbitmq, ollama',
   );
@@ -28,4 +28,4 @@ module.exports = async () => {
   }
 
   console.log('[integration teardown] Infrastructure services were terminated.');
-};
+}

@@ -10,7 +10,7 @@
     "start": "nx start chatbot",
     "lint": "nx run-many -t lint",
     "format": "nx format:write",
-    "test:integration": "jest --config tests/integration/jest.config.cjs --runInBand",
+    "test:integration": "jest --config tests/integration/jest.config.js --runInBand",
     "test:e2e:setup": "tsx tests/e2e/scripts/start-infra.ts",
     "test:e2e": "playwright test"
   },
