@@ -3,10 +3,10 @@ const config = {
   displayName: 'integration',
   testEnvironment: 'node',
   testMatch: ['<rootDir>/specs/**/*.test.ts'],
-  globalSetup: '<rootDir>/global-setup.js',
+  globalSetup: '<rootDir>/../shared/infra/start-infra.js',
   globalTeardown: '<rootDir>/global-teardown.js',
   transform: {
-    '^.+\\.[tj]sx?$': ['ts-jest', { tsconfig: '<rootDir>/tsconfig.json' }],
+    '^.+\\.tsx?$': ['ts-jest', { tsconfig: '<rootDir>/tsconfig.json' }],
   },
   moduleNameMapper: {
     '^@common$': '<rootDir>/../../libs/common/src/index.ts',

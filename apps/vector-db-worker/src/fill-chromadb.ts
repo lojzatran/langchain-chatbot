@@ -3,7 +3,7 @@ import { OllamaEmbeddings } from '@langchain/ollama';
 import { Chroma } from '@langchain/community/vectorstores/chroma';
 import { ChromaClient } from 'chromadb';
 
-import { env } from '@common';
+import { env, CHATBOT_CONSTANTS } from '@common';
 
 export const fillChromaStore = async (data: string): Promise<void> => {
   console.log('Start filling ChromaDB...');
@@ -15,7 +15,7 @@ export const fillChromaStore = async (data: string): Promise<void> => {
   const chunks = await splitter.createDocuments([data]);
 
   const embeddings = new OllamaEmbeddings({
-    model: 'nomic-embed-text:latest',
+    model: CHATBOT_CONSTANTS.MODELS.LOCAL.EMBEDDING,
     baseUrl: env.OLLAMA_BASE_URL,
   });
 
@@ -36,7 +36,7 @@ export const fillChromaStore = async (data: string): Promise<void> => {
   }
 
   const vectorStore = await Chroma.fromDocuments(chunks, embeddings, {
-    collectionName: 'faq-collection',
+    collectionName: CHATBOT_CONSTANTS.MODELS.LOCAL.COLLECTION,
     index: chromaClient,
   });
 

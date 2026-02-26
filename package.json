@@ -10,8 +10,8 @@
     "start": "nx start chatbot",
     "lint": "nx run-many -t lint",
     "format": "nx format:write",
-    "test:integration": "jest --config tests/integration/jest.config.js --runInBand",
-    "test:e2e:setup": "tsx tests/e2e/scripts/start-infra.ts",
+    "test:integration": "OLLAMA_CHAT_MODEL=smollm:135m NODE_OPTIONS=--import=tsx/esm jest --config tests/integration/jest.config.js --runInBand",
+    "test:e2e:setup": "OLLAMA_CHAT_MODEL=smollm:135m node --import tsx/esm tests/shared/infra/start-infra.js",
     "test:e2e": "playwright test"
   },
   "dependencies": {

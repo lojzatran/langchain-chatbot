@@ -90,8 +90,6 @@ export default abstract class ChatbotEngine {
   }
 
   private handleError(error: unknown) {
-    console.error('Error in streamAnswer:', error);
-
     if (this.ws.readyState === WebSocket.OPEN) {
       this.ws.send(
         JSON.stringify({
