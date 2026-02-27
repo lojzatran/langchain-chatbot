@@ -63,13 +63,33 @@ export default abstract class ChatbotEngine {
         ai: answer,
       });
     } catch (error) {
+      if (this.isClientDisconnectAbort(error)) {
+        console.warn('Streaming stopped because the client disconnected.');
+        return;
+      }
       this.handleError(error);
     }
   }
 
-  private handleError(error: unknown) {
-    console.error('Error in streamAnswer:', error);
+  private isClientDisconnectAbort(error: unknown): boolean {
+    if (this.ws.readyState === WebSocket.OPEN) {
+      return false;
+    }
 
+    if (!(error instanceof Error)) {
+      return false;
+    }
+
+    if (error.name === 'AbortError') {
+      return true;
+    }
+
+    const socketCode = (error as Error & { cause?: { code?: string } }).cause
+      ?.code;
+    return socketCode === 'UND_ERR_SOCKET';
+  }
+
+  private handleError(error: unknown) {
     if (this.ws.readyState === WebSocket.OPEN) {
       this.ws.send(
         JSON.stringify({
@@ -85,7 +105,7 @@ export default abstract class ChatbotEngine {
   }
 
   private async streamAnswerToWs(
-    chain: RunnableSequence<ChainInput, any>,
+    chain: RunnableSequence<ChainInput, unknown>,
     question: string,
     chatHistory: ChatMessage[],
   ) {
@@ -97,8 +117,6 @@ export default abstract class ChatbotEngine {
     let answer = '';
 
     for await (const streamEvent of answerStreamEvent) {
-      console.log(streamEvent);
-      // Safety check: is the client still connected?
       if (this.ws.readyState !== WebSocket.OPEN) {
         console.warn('WebSocket closed during stream processing');
         break;

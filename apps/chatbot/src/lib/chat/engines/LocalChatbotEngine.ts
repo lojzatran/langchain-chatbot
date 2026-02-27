@@ -5,12 +5,10 @@ import { ChatOllama } from '@langchain/ollama';
 import { Chroma } from '@langchain/community/vectorstores/chroma';
 import { ChromaClient } from 'chromadb';
 import { OllamaEmbeddings } from '@langchain/ollama';
-import { env } from '@common';
-
-import { CHATBOT_CONSTANTS } from '../../constants';
+import { env, CHATBOT_CONSTANTS } from '@common';
 
 export default class LocalChatbotEngine extends ChatbotEngine {
-  private CHAT_MODEL = CHATBOT_CONSTANTS.MODELS.LOCAL.CHAT;
+  private CHAT_MODEL = env.OLLAMA_CHAT_MODEL;
   private EMBEDDING_MODEL = CHATBOT_CONSTANTS.MODELS.LOCAL.EMBEDDING;
   private COLLECTION_NAME = CHATBOT_CONSTANTS.MODELS.LOCAL.COLLECTION;
 

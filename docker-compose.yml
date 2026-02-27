@@ -13,11 +13,12 @@ x-chatbot-app: &chatbot-app
   volumes:
     - uploads:/app/uploads
   tty: true
+  restart: on-failure
   depends_on:
     chromadb:
-      condition: service_started
+      condition: service_healthy
     ollama:
-      condition: service_started
+      condition: service_healthy
     rabbitmq:
       condition: service_healthy
 
@@ -26,6 +27,16 @@ services:
     image: chromadb/chroma
     ports:
       - '8000:8000'
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          "bash -c 'exec 3<>/dev/tcp/127.0.0.1/8000 && echo -e \"GET /api/v2/heartbeat HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n\" >&3 && cat <&3 | grep \"200 OK\"'",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
 
   rabbitmq:
     image: rabbitmq:4.2.3-management-alpine
@@ -36,10 +47,10 @@ services:
       - RABBITMQ_ERLANG_COOKIE=a_very_long_secret_cookie_for_rabbitmq_4_0
     healthcheck:
       test: ['CMD', 'rabbitmq-diagnostics', '-q', 'ping']
-      interval: 5s
+      interval: 10s
       timeout: 5s
-      retries: 5
-      start_period: 10s
+      retries: 10
+      start_period: 30s
 
   ollama:
     build:
@@ -48,6 +59,12 @@ services:
       - '11434:11434'
     volumes:
       - ollama_data:/root/.ollama
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:11434/api/tags']
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 60s
 
   app1:
     <<: *chatbot-app

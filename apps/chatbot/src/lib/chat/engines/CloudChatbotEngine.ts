@@ -2,12 +2,10 @@ import { BaseChatModel } from '@langchain/core/language_models/chat_models';
 import { BaseRetriever } from '@langchain/core/retrievers';
 import ChatbotEngine from './ChatbotEngine';
 import { ChatGoogleGenerativeAI } from '@langchain/google-genai';
-import { env } from '@common';
+import { env, CHATBOT_CONSTANTS } from '@common';
 import { createClient } from '@supabase/supabase-js';
 import { SupabaseVectorStore } from '@langchain/community/vectorstores/supabase';
 import { GoogleGenerativeAIEmbeddings } from '@langchain/google-genai';
-
-import { CHATBOT_CONSTANTS } from '../../constants';
 
 export default class CloudChatbotEngine extends ChatbotEngine {
   private CHAT_MODEL = CHATBOT_CONSTANTS.MODELS.CLOUD.CHAT;

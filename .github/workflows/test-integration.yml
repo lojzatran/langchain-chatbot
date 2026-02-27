@@ -1,0 +1,43 @@
+name: Integration Tests
+
+on:
+  workflow_call:
+
+jobs:
+  test-integration:
+    runs-on: ubuntu-latest
+    env:
+      OLLAMA_CHAT_MODEL: smollm:135m
+      SKIP_ENV_VALIDATION: true
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Disable Ollama volume in CI
+        run: |
+          cat <<EOF > docker-compose.override.yml
+          services:
+            ollama:
+              build:
+                args:
+                  CHAT_MODEL: ${{ env.OLLAMA_CHAT_MODEL }}
+              volumes: []
+          EOF
+
+      - name: Create dummy .env file
+        run: |
+          echo "SUPABASE_URL=http://localhost:54321" > .env
+          echo "SUPABASE_API_KEY=dummy" >> .env          
+          echo "OLLAMA_CHAT_MODEL=${{ env.OLLAMA_CHAT_MODEL }}" >> .env
+
+      - name: Run integration tests
+        run: npm run test:integration

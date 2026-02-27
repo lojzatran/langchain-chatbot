@@ -1,229 +1,220 @@
 # Multi-Chain LangChain Chatbot
 
-A Next.js-powered chatbot that allows users to switch between different AI stacks (LLMs, Embeddings, and Vector Stores). It provides a flexible architecture to compare performance and capabilities across different cloud and local services.
+Next.js chatbot with runtime-selectable RAG engines, WebSocket streaming responses, and async local knowledge indexing through RabbitMQ.
 
-## Current Status
+## Current Setup
 
-- Supports runtime AI-engine switching over WebSocket per chat session.
-- Supports knowledge upload from UI (`/chatbot/upload`) and async indexing via RabbitMQ worker.
-- Provides both cloud (`supabase-gemini`) and local (`chroma-gemma3-nomic`) retrieval + generation paths.
-- Includes automated integration and end-to-end test coverage.
+- Monorepo: Nx
+- UI + API + WebSocket server: `apps/chatbot`
+- Background worker: `apps/vector-db-worker`
+- Infra services: ChromaDB, Ollama, RabbitMQ (via Docker Compose)
+- Docker runtime entrypoint: Nginx load-balancing two chatbot app containers (`app1`, `app2`)
 
-## Available Configurations
+## Runtime Configurations
 
-Upon starting the chat, users can choose between two primary AI chains:
+| Config ID | LLM | Embeddings | Vector Store |
+| --- | --- | --- | --- |
+| `supabase-gemini` | Google Gemini `gemini-2.5-flash-lite` | Google Gemini `gemini-embedding-001` | Supabase (`documents` + `match_documents`) |
+| `chroma-gemma3-nomic` | Ollama `OLLAMA_CHAT_MODEL` (default `gemma3:1b`) | Ollama `nomic-embed-text:latest` | ChromaDB collection `faq-collection` |
 
-1.  **Supabase + Google Gemini (`supabase-gemini`)**:
-    - **LLM**: Google Gemini `gemini-2.5-flash-lite`
-    - **Embeddings**: Google Gemini `gemini-embedding-001`
-    - **Vector Store**: Supabase (PostgreSQL with `pgvector`)
-2.  **Chroma + Ollama (`chroma-gemma3-nomic`)**:
-    - **LLM**: Ollama `gemma3:1b` (Local)
-    - **Embeddings**: Ollama `nomic-embed-text:latest` (Local)
-    - **Vector Store**: ChromaDB (Local)
+## Component Diagram
 
----
+```mermaid
+flowchart LR
+  User[User Browser]
+  Nginx[Nginx :8080]
+
+  subgraph ChatbotApps["Chatbot App Layer (Next.js custom server)"]
+    App1[app1]
+    App2[app2]
+    WS[WebSocket server /api/ws]
+    UploadApi[Upload API /api/chatbots/config]
+    Session[WebSocket session + engine factory]
+
+    App1 --> WS
+    App2 --> WS
+    App1 --> UploadApi
+    App2 --> UploadApi
+    WS --> Session
+  end
+
+  User -- HTTP + WS --> Nginx
+  Nginx --> App1
+  Nginx --> App2
+
+  Session -- Local LLM + embeddings --> Ollama[(Ollama)]
+  Session -- Local retrieval --> Chroma[(ChromaDB)]
+  Session -- Cloud LLM + embeddings --> Gemini[(Google Gemini API)]
+  Session -- Cloud retrieval --> Supabase[(Supabase pgvector)]
+
+  UploadApi -- Store .txt file --> Uploads[(uploads volume)]
+  UploadApi -- Publish job fill_vector_store --> Rabbit[(RabbitMQ)]
+
+  Worker[vector-db-worker] -- Consume queue --> Rabbit
+  Worker -- Read uploaded file --> Uploads
+  Worker -- Generate embeddings --> Ollama
+  Worker -- Upsert collection --> Chroma
+```
+
+Notes:
+- In local development, you typically run one chatbot process (`npm run dev` or `npm run dev:all`) without Nginx.
+- In Docker Compose full stack, traffic enters through Nginx and is distributed to `app1` and `app2`.
+
+## Sequence Diagram (User Question Processing)
+
+```mermaid
+sequenceDiagram
+  autonumber
+  participant U as User
+  participant UI as Chat UI (Browser)
+  participant N as Nginx
+  participant WS as Chatbot WebSocket Server
+  participant S as WebSocketChatSession
+  participant E as ChatbotEngine
+  participant O as Ollama
+  participant C as ChromaDB
+  participant G as Google Gemini
+  participant SB as Supabase
+
+  U->>UI: Enter question + Send
+  UI->>N: WebSocket message {content}
+  N->>WS: Forward /api/ws frame
+  WS->>S: handleAnswer(content)
+  S->>E: streamAnswer(question, chatHistory)
+
+  alt Config = chroma-gemma3-nomic
+    E->>O: Rewrite question + embedding calls
+    E->>C: Similarity search in faq-collection
+    C-->>E: Retrieved context docs
+    E->>O: Generate final answer from context
+  else Config = supabase-gemini
+    E->>G: Rewrite question + embedding calls
+    E->>SB: match_documents(query_embedding)
+    SB-->>E: Retrieved context docs
+    E->>G: Generate final answer from context
+  end
+
+  loop Streaming response chunks
+    E-->>WS: chunk token
+    WS-->>N: {type: "chunk", content}
+    N-->>UI: WebSocket chunk
+    UI-->>U: Incrementally update assistant message
+  end
+
+  E-->>WS: {type: "end", content}
+```
 
 ## Prerequisites
 
-Ensure you have the following credentials and services ready:
+- Node.js 22+
+- Docker + Docker Compose
+- Supabase project (for cloud path)
+- Google API key (for cloud path)
 
-- **Docker & Docker Compose**: Required for running independent services (ChromaDB, RabbitMQ, Ollama).
-- **Node.js**: v22 or higher recommended.
-- **Google AI Studio API Key**: Required for the Gemini configuration.
-- **Supabase Project**: Required for the Supabase configuration (with `pgvector` enabled).
-- **Ollama**: Installed and running locally for local models.
+## Environment Variables
 
----
+Create `.env` at repo root:
 
-## Setup
+```env
+# Required by current env schema
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_API_KEY=your_supabase_api_key
 
-### 1. Clone the repository
+# Required to enable/use cloud config (supabase-gemini)
+GOOGLE_API_KEY=your_google_api_key
 
-```bash
-git clone <repository-url>
-cd langchain-chatbot-test
+# Local infra defaults
+CHROMA_HOST=localhost
+CHROMA_PORT=8000
+RABBITMQ_URL=amqp://localhost
+OLLAMA_BASE_URL=http://localhost:11434
+OLLAMA_CHAT_MODEL=gemma3:1b
+
+# Optional tuning
+SPLITTER_CHUNK_SIZE=1100
+SPLITTER_CHUNK_OVERLAP=50
+STORAGE_DIR=./uploads
+
+# Needed when running production-mode app behind auth (e.g. docker compose full stack)
+BASIC_AUTH_USER=admin
+BASIC_AUTH_PASSWORD=change-me
 ```
 
-### 2. Install dependencies
+## Local Development
+
+1. Install dependencies:
 
 ```bash
 npm install
 ```
 
-### 3. Configure Environment Variables
-
-Create a `.env` file in the root directory:
-
-```env
-# Required settings
-GOOGLE_API_KEY=your_google_api_key
-SUPABASE_URL=your_supabase_project_url
-SUPABASE_API_KEY=your_supabase_anon_key
-CHROMA_HOST=localhost
-CHROMA_PORT=8000
-RABBITMQ_URL=amqp://localhost
-
-# Optional settings
-SPLITTER_CHUNK_SIZE=1100
-SPLITTER_CHUNK_OVERLAP=50
-OLLAMA_BASE_URL=http://localhost:11434
-CHROMA_SSL=false
-STORAGE_DIR=./uploads
-```
-
-### 4. Supabase Vector Setup
-
-If using the Supabase configuration, run the following SQL in your Supabase SQL Editor to enable vector search:
-
-```sql
--- Enable the pgvector extension
-create extension if not exists vector;
-
--- Create a table for documents
-create table documents (
-  id uuid primary key,
-  content text,
-  metadata jsonb,
-  embedding vector (768) -- 768 for Gemini embedding-001
-);
-
--- Create the search function
-create function match_documents (
-  query_embedding vector (768),
-  filter jsonb default '{}'
-) returns table (
-  id uuid,
-  content text,
-  metadata jsonb,
-  similarity float
-) language plpgsql as $$
-#variable_conflict use_column
-begin
-  return query
-  select
-    id,
-    content,
-    metadata,
-    1 - (documents.embedding <=> query_embedding) as similarity
-  from documents
-  where metadata @> filter
-  order by documents.embedding <=> query_embedding;
-end;
-$$;
-```
-
----
-
-## Getting Started
-
-### 1. Start Infrastructure
-
-Use Docker Compose to launch only the supporting infrastructure (database and message broker):
+2. Start infrastructure:
 
 ```bash
-docker compose up -d rabbitmq chromadb ollama
+docker compose up -d chromadb rabbitmq ollama
 ```
 
-### 2. Run the application locally
-
-To run the chatbot and the background worker simultaneously:
+3. Start app + worker:
 
 ```bash
 npm run dev:all
 ```
 
-Alternatively, run individually:
+Alternative:
+- App only: `npm run dev`
+- Worker only: `nx serve vector-db-worker`
 
-- Chatbot: `nx dev chatbot`
-- Worker: `nx serve vector-db-worker`
+Open `http://localhost:8080`.
 
-The application will be available at [http://localhost:8080](http://localhost:8080).
+## Knowledge Upload Pipeline
 
----
+1. Open `/chatbot/upload`.
+2. Upload a `.txt` file.
+3. API route `POST /api/chatbots/config` writes the file to `uploads/` (or `STORAGE_DIR`).
+4. API publishes `{"file":"<path>"}` to RabbitMQ queue `fill_vector_store`.
+5. `vector-db-worker` consumes the job, chunks content, regenerates embeddings with Ollama, and rebuilds Chroma collection `faq-collection`.
 
-## Knowledge Management
+## Supabase Setup (Cloud Path)
 
-Instead of manual scripts, you can now manage knowledge base directly through the UI:
+The cloud engine expects:
+- Table name: `documents`
+- RPC function name: `match_documents`
 
-1.  Click **Upload Knowledge** in the chat interface header.
-2.  Select and upload a `.txt` file.
-3.  The **Chatbot** app saves the file to `uploads/` and notifies the **Vector DB Worker** via RabbitMQ.
-4.  The worker processes the file, splits it into chunks, and indexes it into **ChromaDB**.
+Use `pgvector` in your Supabase DB and create table/function names that match those identifiers.
 
----
-
-## Usage
-
-Once the services are active, you can:
-
-1. Select your preferred **AI Configuration**.
-2. Chat with the assistant.
-3. The system will retrieve context from the selected vector store (Supabase or Chroma) and generate responses using the selected LLM (Gemini or Ollama).
-
----
-
-## Docker Deployment
-
-Use Docker Compose to run the full production stack:
+## Docker Compose Full Stack
 
 ```bash
 docker compose up --build
 ```
 
----
+This starts:
+- `nginx`
+- `app1`, `app2`
+- `worker`
+- `chromadb`, `rabbitmq`, `ollama`
+
+Access app at `http://localhost:8080`.
 
 ## Testing
 
-The project currently has two automated test suites:
-
-### 1. Integration tests (Jest)
-
-These tests validate infrastructure-backed behavior (e.g. upload route + RabbitMQ queue publish, websocket config engine switching).
+Integration tests:
 
 ```bash
 npm run test:integration
 ```
 
-### 2. End-to-end tests (Playwright)
+- Starts/warms infra in setup (`chromadb`, `rabbitmq`, `ollama`)
+- Runs Jest integration specs
+- Teardown kills/removes infra containers
 
-These tests run the chat UI flow in a real browser against `http://localhost:8080`.
+E2E tests:
 
 ```bash
+npm run test:e2e:setup
 npm run test:e2e
 ```
 
-Notes:
-
-- Docker must be running for both suites (`chromadb`, `rabbitmq`, and `ollama` are started by global setup).
-- Ensure your root `.env` is configured before running tests.
-- Playwright HTML report is generated in `playwright-report/`.
-
----
-
-## Technologies Used
-
-- **Framework**: Next.js 16 (App Router)
-- **Monorepo Management**: Nx
-- **Orchestration**: LangChain.js
-- **Background Processing**: RabbitMQ + Node.js Worker
-- **Vector Databases**: ChromaDB (Local), Supabase (PostgreSQL with `pgvector`)
-- **LLMs**: Google Gemini 2.5 Flash Lite, Ollama (Local)
-- **Embeddings**: Google Gemini, Ollama (Nomic)
-- **Real-time**: WebSockets for streaming responses
-- **Validation**: Zod
-- **Infrastructure**: Docker, Nginx (Load Balancing)
-- **Styling**: Tailwind CSS 4
-
----
-
-## FAQ
-
-### Why are dependencies installed in Docker instead of being bundled by esbuild?
-
-While `esbuild` can bundle dependencies into a single file, we keep them external (via `npm install --omit=dev` in the Dockerfile) for several reasons:
-
-1.  **Native Modules**: Libraries with C++ bindings (like certain database drivers) cannot be bundled and must exist in `node_modules`.
-2.  **Reliability**: Bundlers can sometimes skip files loaded via dynamic `require()` calls, leading to runtime errors. For example, in this project, **`amqplib`** is marked as an external dependency in the `project.json` and must be installed via `npm install` in the final Docker stage to be found by Node.js.
-3.  **Docker Caching**: Installing dependencies in a separate Docker layer allows for much faster builds when only the source code changes.
-4.  **Best Practices**: This is the industry standard for production Node.js applications, ensuring better compatibility and easier debugging.
+- `test:e2e:setup` starts/warms infra
+- `test:e2e` runs Playwright and auto-starts app web server (`npm run dev`)
+- Playwright report output: `playwright-report/`

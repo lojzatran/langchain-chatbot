@@ -5,6 +5,8 @@ test.describe('Chatbot E2E Flow', () => {
     chatPage,
     page,
   }) => {
+    test.setTimeout(90_000);
+
     // 1. Go to homepage
     await chatPage.goto();
 
@@ -32,7 +34,7 @@ test.describe('Chatbot E2E Flow', () => {
     await expect(async () => {
       const count = await chatPage.getMessagesCount();
       expect(count).toBeGreaterThan(2);
-    }).toPass({ timeout: 15000 });
+    }).toPass({ timeout: 60_000 });
 
     const aiReply = await chatPage.getLatestMessage();
     const aiReplyText = await aiReply.textContent();

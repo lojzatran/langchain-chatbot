@@ -17,6 +17,7 @@ const envSchema = z.object({
   CHROMA_SSL: z.boolean().default(false),
   RABBITMQ_URL: z.string().default('amqp://localhost'),
   OLLAMA_BASE_URL: z.string().default('http://localhost:11434'),
+  OLLAMA_CHAT_MODEL: z.string().default('gemma3:1b'),
 });
 
 const skipValidation = process.env.SKIP_ENV_VALIDATION === 'true';
