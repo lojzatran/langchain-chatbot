@@ -9,6 +9,7 @@ Next.js chatbot with runtime-selectable RAG engines, WebSocket streaming respons
 - Background worker: `apps/vector-db-worker`
 - Infra services: ChromaDB, Ollama, RabbitMQ (via Docker Compose)
 - Docker runtime entrypoint: Nginx load-balancing two chatbot app containers (`app1`, `app2`)
+- Observability: OpenTelemetry Collector + Zipkin (via Docker Compose)
 
 ## Runtime Configurations
 
@@ -152,7 +153,7 @@ npm install
 2. Start infrastructure:
 
 ```bash
-docker compose up -d chromadb rabbitmq ollama
+docker compose up -d chromadb rabbitmq ollama otel-collector zipkin
 ```
 
 3. Start app + worker:
@@ -197,8 +198,64 @@ This starts:
 - `app1`, `app2`
 - `worker`
 - `chromadb`, `rabbitmq`, `ollama`
+- `otel-collector`, `zipkin`
 
 Access app at `http://localhost:8080`.
+
+## Observability
+
+The stack ships with an [OpenTelemetry Collector](https://opentelemetry.io/docs/collector/) and [Zipkin](https://zipkin.io/) for distributed tracing.
+
+### How it works
+
+The chatbot app (`apps/chatbot`) is instrumented via `@vercel/otel` (see `apps/chatbot/instrumentation.ts`), which registers the service as `langchain-chatbot-app` and exports telemetry using the OTLP protocol.
+
+```
+Chatbot App  ──OTLP──▶  otel-collector  ──▶  Zipkin (traces)
+                                        ──▶  debug exporter (stdout)
+```
+
+### OTel Collector (`otel-collector-config.yaml`)
+
+The collector is configured with:
+
+| Component            | Details                                                                 |
+| -------------------- | ----------------------------------------------------------------------- |
+| **Receiver**         | OTLP over gRPC (`0.0.0.0:4317`) and HTTP (`0.0.0.0:4318`)               |
+| **Traces exporter**  | Zipkin (`http://zipkin:9411/api/v2/spans`, proto format) + debug stdout |
+| **Metrics exporter** | debug stdout                                                            |
+| **Logs exporter**    | debug stdout                                                            |
+
+#### Exposed ports
+
+| Port    | Purpose                                            |
+| ------- | -------------------------------------------------- |
+| `4317`  | OTLP gRPC receiver (apps send traces here)         |
+| `4318`  | OTLP HTTP receiver                                 |
+| `8888`  | Prometheus metrics exposed by the Collector itself |
+| `8889`  | Prometheus exporter metrics                        |
+| `13133` | Health check extension                             |
+| `1888`  | pprof extension                                    |
+| `55679` | zPages extension                                   |
+
+### Zipkin
+
+Zipkin stores and visualises the distributed traces forwarded by the OTel Collector.
+
+- **UI:** [http://localhost:9411](http://localhost:9411)
+- **Service name in traces:** `langchain-chatbot-app`
+
+### Viewing traces locally
+
+1. Start the observability infra alongside the other services:
+
+   ```bash
+   docker compose up -d otel-collector zipkin
+   ```
+
+2. Run the app (`npm run dev:all` or `docker compose up --build`).
+3. Open [http://localhost:9411](http://localhost:9411) in your browser.
+4. Select service `langchain-chatbot-app` and click **Find Traces**.
 
 ## Testing
 

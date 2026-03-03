@@ -9,12 +9,15 @@ receivers:
 exporters:
   debug:
     verbosity: detailed
+  zipkin/nontls:
+    endpoint: 'http://zipkin:9411/api/v2/spans'
+    format: proto
 
 service:
   pipelines:
     traces:
       receivers: [otlp]
-      exporters: [debug]
+      exporters: [debug, zipkin/nontls]
     metrics:
       receivers: [otlp]
       exporters: [debug]

@@ -105,6 +105,11 @@ services:
       - 4318:4318 # OTLP http receiver
       - 55679:55679 # zpages extension
 
+  zipkin:
+    image: openzipkin/zipkin
+    ports:
+      - '9411:9411'
+
 volumes:
   ollama_data:
   uploads:
