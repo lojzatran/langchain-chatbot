@@ -6,6 +6,8 @@ x-chatbot-app: &chatbot-app
     - .env
   environment:
     - NODE_ENV=production
+    - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
+    - OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
     - CHROMA_HOST=chromadb
     - OLLAMA_BASE_URL=http://ollama:11434
     - RABBITMQ_URL=amqp://rabbitmq
@@ -21,6 +23,8 @@ x-chatbot-app: &chatbot-app
       condition: service_healthy
     rabbitmq:
       condition: service_healthy
+    otel-collector:
+      condition: service_started
 
 services:
   chromadb:
@@ -93,9 +97,9 @@ services:
       - app2
 
   otel-collector:
-    image: otel/opentelemetry-collector
+    image: otel/opentelemetry-collector-contrib
     volumes:
-      - ./otel-collector-config.yaml:/etc/otelcol/config.yaml
+      - ./observability/otel-collector-config.yaml:/etc/otelcol-contrib/config.yaml
     ports:
       - 1888:1888 # pprof extension
       - 8888:8888 # Prometheus metrics exposed by the Collector
@@ -104,11 +108,19 @@ services:
       - 4317:4317 # OTLP gRPC receiver
       - 4318:4318 # OTLP http receiver
       - 55679:55679 # zpages extension
+      - 12345:12345 # Prometheus metrics exposed by the app itself
 
   zipkin:
     image: openzipkin/zipkin
     ports:
       - '9411:9411'
+
+  prometheus:
+    image: prom/prometheus
+    ports:
+      - '9090:9090'
+    volumes:
+      - ./observability/prometheus.yml:/etc/prometheus/prometheus.yml
 
 volumes:
   ollama_data:

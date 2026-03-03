@@ -1,0 +1,40 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+connectors:
+  spanmetrics:
+    namespace: langchain_chatbot
+
+exporters:
+  debug:
+    verbosity: detailed
+  zipkin/nontls:
+    endpoint: 'http://zipkin:9411/api/v2/spans'
+    format: proto
+  prometheus:
+    endpoint: 0.0.0.0:12345
+
+service:
+  telemetry:
+    metrics:
+      readers:
+        - pull:
+            exporter:
+              prometheus:
+                host: '0.0.0.0'
+                port: 8888
+  pipelines:
+    traces:
+      receivers: [otlp]
+      exporters: [debug, zipkin/nontls, spanmetrics]
+    metrics:
+      receivers: [otlp, spanmetrics]
+      exporters: [debug, prometheus]
+    logs:
+      receivers: [otlp]
+      exporters: [debug]
