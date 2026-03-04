@@ -9,6 +9,21 @@ receivers:
 connectors:
   spanmetrics:
     namespace: langchain_chatbot
+    dimensions:
+      - name: http.method
+      - name: http.url
+      - name: http.status_code
+      - name: http.route
+    exclude_dimensions: ['status.code']
+
+processors:
+  transform/span:
+    error_mode: ignore
+    trace_statements:
+      - context: span
+        statements:
+          - set(span.attributes["http.url"], span.attributes["http.route"])
+          - delete_key(span.attributes, "http.route")
 
 exporters:
   debug:
@@ -31,6 +46,7 @@ service:
   pipelines:
     traces:
       receivers: [otlp]
+      processors: [transform/span]
       exporters: [debug, zipkin/nontls, spanmetrics]
     metrics:
       receivers: [otlp, spanmetrics]
