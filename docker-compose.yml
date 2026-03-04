@@ -111,7 +111,7 @@ services:
       - 12345:12345 # Prometheus metrics exposed by the app itself
 
   zipkin:
-    image: openzipkin/zipkin
+    image: openzipkin/zipkin:3
     ports:
       - '9411:9411'
 
