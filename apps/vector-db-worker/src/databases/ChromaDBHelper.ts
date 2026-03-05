@@ -4,23 +4,19 @@ import { Chroma } from '@langchain/community/vectorstores/chroma';
 import { ChromaClient } from 'chromadb';
 
 import { env, CHATBOT_CONSTANTS } from '@common';
-import { VectorDatabase } from '../types/VectorDatabase';
+import { VectorDatabaseImpl } from './VectorDatabase';
+import { Document } from '@langchain/core/documents';
+import { Embeddings } from '@langchain/core/embeddings';
 
-export default class ChromaDB implements VectorDatabase {
-  async fill(data: string): Promise<void> {
-    console.log('Start filling ChromaDB...');
-    const splitter = new RecursiveCharacterTextSplitter({
-      chunkSize: env.SPLITTER_CHUNK_SIZE,
-      chunkOverlap: env.SPLITTER_CHUNK_OVERLAP,
-    });
-
-    const chunks = await splitter.createDocuments([data]);
-
-    const embeddings = new OllamaEmbeddings({
+export default class ChromaDB extends VectorDatabaseImpl<ChromaClient> {
+  getEmbeddingsClient(): Embeddings {
+    return new OllamaEmbeddings({
       model: CHATBOT_CONSTANTS.MODELS.LOCAL.EMBEDDING,
       baseUrl: env.OLLAMA_BASE_URL,
     });
+  }
 
+  getDbClient(): ChromaClient {
     const chromaHost = env.CHROMA_HOST;
 
     const chromaClient = new ChromaClient({
@@ -29,19 +25,21 @@ export default class ChromaDB implements VectorDatabase {
       ssl: env.CHROMA_SSL,
     });
 
-    // Delete existing collection if it exists to start fresh
-    try {
-      await chromaClient.deleteCollection({ name: 'faq-collection' });
-      console.log('Existing collection deleted.');
-    } catch (e) {
-      // Collection might not exist, ignore
-    }
+    return chromaClient;
+  }
 
-    const vectorStore = await Chroma.fromDocuments(chunks, embeddings, {
+  async clearDatabase(dbClient: ChromaClient): Promise<void> {
+    await dbClient.deleteCollection({ name: 'faq-collection' });
+  }
+
+  async convertAndSaveEmbeddings(
+    dbClient: ChromaClient,
+    embeddingsClient: Embeddings,
+    chunks: Document<Record<string, any>>[],
+  ): Promise<void> {
+    await Chroma.fromDocuments(chunks, embeddingsClient, {
       collectionName: CHATBOT_CONSTANTS.MODELS.LOCAL.COLLECTION,
-      index: chromaClient,
+      index: dbClient,
     });
-
-    console.log('ChromaDB filled successfully!');
   }
 }

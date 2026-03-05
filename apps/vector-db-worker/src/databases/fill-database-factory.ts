@@ -1,9 +1,12 @@
 import Supabase from './SupabaseHelper';
 import ChromaDB from './ChromaDBHelper';
-import type { VectorDatabase } from '../types/VectorDatabase';
+import type { VectorDatabaseImpl } from './VectorDatabase';
 import { DatabaseType } from '@common';
 
-const DatabaseRegistry: Record<DatabaseType, new () => VectorDatabase> = {
+const DatabaseRegistry: Record<
+  DatabaseType,
+  new () => VectorDatabaseImpl<any>
+> = {
   [DatabaseType.SUPABASE]: Supabase,
   [DatabaseType.CHROMA]: ChromaDB,
 };

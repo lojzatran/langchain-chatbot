@@ -177,13 +177,14 @@ Open `http://localhost:8080`.
 
 ## Knowledge Upload Pipeline
 
-It is possible to upload your own knowledge file for chatbot. For now, it should look similar to the `faq.txt` file in `uploads/` directory. The upload is possible only for local chromadb.
+It is possible to upload your own knowledge file for the chatbot. For now, it should look similar to the `faq.txt` file in the `uploads/` directory. The upload supports both local ChromaDB and cloud Supabase.
 
 1. Open `/chatbot/upload`.
-2. Upload a `.txt` file.
-3. API route `POST /api/chatbots/config` writes the file to `uploads/` (or `STORAGE_DIR`).
-4. API publishes `{"file":"<path>"}` to RabbitMQ queue `fill_vector_store`.
-5. `vector-db-worker` consumes the job, chunks content, regenerates embeddings with Ollama, and rebuilds Chroma collection `faq-collection`.
+2. Select the database type (**ChromaDB** or **Supabase**).
+3. Upload a `.txt` file.
+4. API route `POST /api/chatbots/config` writes the file to `uploads/` (or `STORAGE_DIR`).
+5. API publishes `{"file":"<path>", "dbType": "..."}` to RabbitMQ queue `fill_vector_store`.
+6. `vector-db-worker` consumes the job, chunks content, generates embeddings (Ollama for Chroma, Gemini for Supabase), and updates the selected vector store.
 
 ## Supabase Setup (Cloud Path)
 
@@ -193,6 +194,7 @@ The cloud engine expects:
 - RPC function name: `match_documents`
 
 Use `pgvector` in your Supabase DB and create table/function names that match those identifiers.
+Refer to the [LangChain Supabase Integration Guide](https://docs.langchain.com/oss/javascript/integrations/vectorstores/supabase#setup) for the required SQL schema and function definitions.
 
 ## Docker Compose Full Stack
 
