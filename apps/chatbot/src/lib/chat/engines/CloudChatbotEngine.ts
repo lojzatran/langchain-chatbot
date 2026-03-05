@@ -5,7 +5,7 @@ import { ChatGoogleGenerativeAI } from '@langchain/google-genai';
 import { env, CHATBOT_CONSTANTS } from '@common';
 import { createClient } from '@supabase/supabase-js';
 import { SupabaseVectorStore } from '@langchain/community/vectorstores/supabase';
-import { GoogleGenerativeAIEmbeddings } from '@langchain/google-genai';
+import { GoogleGenAIEmbeddings } from './GoogleGeminiAiEmbeddings';
 
 export default class CloudChatbotEngine extends ChatbotEngine {
   private CHAT_MODEL = CHATBOT_CONSTANTS.MODELS.CLOUD.CHAT;
@@ -22,7 +22,7 @@ export default class CloudChatbotEngine extends ChatbotEngine {
   }
 
   protected createRetriever(): BaseRetriever {
-    const embeddings = new GoogleGenerativeAIEmbeddings({
+    const embeddings = new GoogleGenAIEmbeddings({
       apiKey: env.GOOGLE_API_KEY,
       model: this.EMBEDDING_MODEL,
     });

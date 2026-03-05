@@ -21,7 +21,8 @@
     ],
     "paths": {
       "@/*": ["./*"],
-      "@common": ["./libs/common/src/index.ts"]
+      "@common": ["./libs/common/src/index.ts"],
+      "@common/*": ["./libs/common/src/*"]
     }
   },
   "include": [

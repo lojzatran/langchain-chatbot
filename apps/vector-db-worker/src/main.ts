@@ -1,7 +1,7 @@
 import amqp from 'amqplib';
 import { readFile } from 'fs/promises';
-import { fillChromaStore } from './fill-chromadb';
 import { env } from '@common';
+import { createDatabaseHelper } from './databases/fill-database-factory';
 
 const main = async () => {
   const rabbitmqUrl = env.RABBITMQ_URL;
@@ -26,7 +26,8 @@ const main = async () => {
       if (filePath) {
         try {
           const fileContent = await readFile(filePath, 'utf-8');
-          await fillChromaStore(fileContent);
+          const dbHelper = createDatabaseHelper(content.dbType);
+          await dbHelper.fill(fileContent);
         } catch (err) {
           console.error(`Error processing file ${filePath}:`, err);
         }

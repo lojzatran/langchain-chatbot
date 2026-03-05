@@ -3,6 +3,7 @@ import { writeFile, mkdir } from 'fs/promises';
 import { join, resolve } from 'path';
 import { NextRequest } from 'next/server';
 import amqplib from 'amqplib';
+import type { DatabaseType } from '@common';
 
 export async function GET() {
   const isSupabaseGeminiEnabled = Boolean(env.GOOGLE_API_KEY);
@@ -16,6 +17,7 @@ export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
     const file = formData.get('file') as File | null;
+    const dbType = formData.get('dbType') as DatabaseType;
 
     if (!file) {
       return Response.json({ error: 'No file uploaded' }, { status: 400 });
@@ -42,7 +44,7 @@ export async function POST(request: NextRequest) {
 
     channel.sendToQueue(
       'fill_vector_store',
-      Buffer.from(JSON.stringify({ file: path })),
+      Buffer.from(JSON.stringify({ file: path, dbType })),
       { persistent: true },
     );
 

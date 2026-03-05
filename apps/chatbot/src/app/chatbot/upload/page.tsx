@@ -2,9 +2,11 @@
 
 import { useState, useRef } from 'react';
 import Head from 'next/head';
+import { DatabaseType } from '@common/lib/types';
 
 export default function ChatbotUploadPage() {
   const [file, setFile] = useState<File | null>(null);
+  const [dbType, setDbType] = useState<DatabaseType>(DatabaseType.CHROMA);
   const [uploading, setUploading] = useState(false);
   const [message, setMessage] = useState<{
     type: 'success' | 'error';
@@ -31,6 +33,7 @@ export default function ChatbotUploadPage() {
 
     const formData = new FormData();
     formData.append('file', file);
+    formData.append('dbType', dbType);
 
     try {
       const response = await fetch('/api/chatbots/config', {
@@ -155,6 +158,37 @@ export default function ChatbotUploadPage() {
                 ref={fileInputRef}
               />
             </label>
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label
+              htmlFor="db-type-select"
+              className="text-xs font-semibold text-gray-400 uppercase tracking-widest"
+            >
+              Database Type
+            </label>
+            <select
+              id="db-type-select"
+              value={dbType}
+              onChange={(e) => setDbType(e.target.value as DatabaseType)}
+              className="w-full bg-black/30 border border-white/20 text-white rounded-xl px-4 py-3 text-sm font-medium appearance-none cursor-pointer transition-all focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400/50 hover:border-white/40"
+              style={{
+                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236366f1'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E")`,
+                backgroundRepeat: 'no-repeat',
+                backgroundPosition: 'right 1rem center',
+                backgroundSize: '1rem',
+              }}
+            >
+              {Object.values(DatabaseType).map((type) => (
+                <option
+                  key={type}
+                  value={type}
+                  className="bg-gray-900 text-white capitalize"
+                >
+                  {type.charAt(0).toUpperCase() + type.slice(1)}
+                </option>
+              ))}
+            </select>
           </div>
 
           <button
