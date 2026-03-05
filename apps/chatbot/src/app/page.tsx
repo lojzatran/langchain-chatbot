@@ -6,6 +6,7 @@ import { useEffect, useState, useRef, SubmitEvent } from 'react';
 import { ChatInput } from '../components/ChatInput';
 import { ChatHeader } from '../components/ChatHeader';
 import { Message, ChatbotConfig } from '../types/chat';
+import { useChatbotConfig } from '../hooks/useChatbotConfig';
 
 export default function Home() {
   const [messages, setMessages] = useState<Message[]>([
@@ -16,23 +17,13 @@ export default function Home() {
     },
   ]);
   const [input, setInput] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const [isMessageLoading, setIsMessageLoading] = useState(false);
   const [config, setConfig] = useState<string | null>(null);
-  const [isCloudEnabled, setIsCloudEnabled] = useState(true);
+  const { config: remoteConfig, isLoading: isConfigLoading } =
+    useChatbotConfig();
+  const isCloudEnabled = remoteConfig?.supabaseGeminiEnabled ?? true;
   const webSocket = useWebSocket();
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const checkConfigStatus = async () => {
-      try {
-        const response = await fetch('/api/chatbots/config');
-        const data = await response.json();
-        setIsCloudEnabled(data.supabaseGeminiEnabled);
-      } catch (error) {
-        console.error('Failed to check config status:', error);
-      }
-    };
-    checkConfigStatus();
-  }, []);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -40,7 +31,7 @@ export default function Home() {
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages, isLoading]);
+  }, [messages, isMessageLoading]);
   const handleConfigSelect = async (selectedConfig: ChatbotConfig) => {
     setConfig(selectedConfig);
     setMessages((prev) => [
@@ -74,7 +65,7 @@ export default function Home() {
     };
     setMessages((prev) => [...prev, userMsg]);
     setInput('');
-    setIsLoading(true);
+    setIsMessageLoading(true);
 
     webSocket?.send(JSON.stringify({ content: input }));
   };
@@ -98,7 +89,7 @@ export default function Home() {
         }
 
         if (parsedData.type === 'chunk') {
-          setIsLoading(false);
+          setIsMessageLoading(false);
           setMessages((prev) => {
             const lastMessage = prev[prev.length - 1];
             console.log(lastMessage);
@@ -138,15 +129,15 @@ export default function Home() {
           content: 'Error: ' + JSON.stringify(event),
         } as Message,
       ]);
-      setIsLoading(false);
+      setIsMessageLoading(false);
     };
-  }, [webSocket, isLoading]);
+  }, [webSocket, isMessageLoading]);
 
   return (
     <div className="flex flex-col h-screen max-w-4xl mx-auto bg-gradient-to-br from-slate-900 via-purple-900/20 to-slate-900 text-white shadow-2xl">
       <ChatHeader config={config} />
 
-      <MessageList messages={messages} isLoading={isLoading} />
+      <MessageList messages={messages} isLoading={isMessageLoading} />
 
       {!config && (
         <div className="flex flex-col items-center justify-center p-8 bg-slate-800/60 backdrop-blur-2xl border-t border-slate-700/50 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -159,47 +150,56 @@ export default function Home() {
             </p>
           </div>
           <div className="flex gap-4">
-            <button
-              onClick={() =>
-                isCloudEnabled &&
-                handleConfigSelect(ChatbotConfig.SUPABASE_GEMINI)
-              }
-              disabled={!isCloudEnabled}
-              className={`group relative flex flex-col items-center px-8 py-4 rounded-2xl bg-slate-800 border border-slate-700 transition-all duration-300 ${
-                isCloudEnabled
-                  ? 'hover:bg-slate-700 hover:border-blue-500/50 hover:shadow-[0_0_20px_rgba(59,130,246,0.15)] active:scale-95'
-                  : 'opacity-40 cursor-not-allowed grayscale'
-              }`}
-            >
-              <span
-                className={`${isCloudEnabled ? 'text-blue-400' : 'text-slate-500'} font-bold mb-1`}
-              >
-                Supabase + Gemini + OpenAI
-              </span>
-              <span className="text-[10px] text-slate-500 uppercase tracking-tighter">
-                {isCloudEnabled
-                  ? 'Vector Database + LLM + Embedding'
-                  : 'Keys missing: GOOGLE_API_KEY or OPENAI_API_KEY'}
-              </span>
-              {isCloudEnabled && (
-                <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-2xl blur opacity-0 group-hover:opacity-20 transition duration-300"></div>
-              )}
-            </button>
-            <button
-              onClick={() =>
-                handleConfigSelect(ChatbotConfig.CHROMA_GEMMA3_NOMIC)
-              }
-              className="group relative flex flex-col items-center px-8 py-4 rounded-2xl bg-slate-800 hover:bg-slate-700 border border-slate-700 transition-all duration-300 hover:border-emerald-500/50 hover:shadow-[0_0_20px_rgba(16,185,129,0.15)] active:scale-95"
-            >
-              <span className="text-emerald-400 font-bold mb-1">
-                Upstash + Ollama
-              </span>
-              <span className="text-[10px] text-slate-500 uppercase tracking-tighter">
-                Vector Database + Local LLM gemma3 + Local Embedding
-                nomic-embed-text
-              </span>
-              <div className="absolute -inset-0.5 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-2xl blur opacity-0 group-hover:opacity-20 transition duration-300"></div>
-            </button>
+            {isConfigLoading ? (
+              <>
+                <div className="w-[280px] h-[100px] rounded-2xl bg-slate-700/50 animate-pulse"></div>
+                <div className="w-[280px] h-[100px] rounded-2xl bg-slate-700/50 animate-pulse"></div>
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={() =>
+                    isCloudEnabled &&
+                    handleConfigSelect(ChatbotConfig.SUPABASE_GEMINI)
+                  }
+                  disabled={!isCloudEnabled}
+                  className={`group relative flex flex-col items-center px-8 py-4 rounded-2xl bg-slate-800 border border-slate-700 transition-all duration-300 ${
+                    isCloudEnabled
+                      ? 'hover:bg-slate-700 hover:border-blue-500/50 hover:shadow-[0_0_20px_rgba(59,130,246,0.15)] active:scale-95'
+                      : 'opacity-40 cursor-not-allowed grayscale'
+                  }`}
+                >
+                  <span
+                    className={`${isCloudEnabled ? 'text-blue-400' : 'text-slate-500'} font-bold mb-1`}
+                  >
+                    Supabase + Gemini + OpenAI
+                  </span>
+                  <span className="text-[10px] text-slate-500 uppercase tracking-tighter">
+                    {isCloudEnabled
+                      ? 'Vector Database + LLM + Embedding'
+                      : 'Keys missing: GOOGLE_API_KEY or OPENAI_API_KEY'}
+                  </span>
+                  {isCloudEnabled && (
+                    <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-2xl blur opacity-0 group-hover:opacity-20 transition duration-300"></div>
+                  )}
+                </button>
+                <button
+                  onClick={() =>
+                    handleConfigSelect(ChatbotConfig.CHROMA_GEMMA3_NOMIC)
+                  }
+                  className="group relative flex flex-col items-center px-8 py-4 rounded-2xl bg-slate-800 hover:bg-slate-700 border border-slate-700 transition-all duration-300 hover:border-emerald-500/50 hover:shadow-[0_0_20px_rgba(16,185,129,0.15)] active:scale-95"
+                >
+                  <span className="text-emerald-400 font-bold mb-1">
+                    Upstash + Ollama
+                  </span>
+                  <span className="text-[10px] text-slate-500 uppercase tracking-tighter">
+                    Vector Database + Local LLM gemma3 + Local Embedding
+                    nomic-embed-text
+                  </span>
+                  <div className="absolute -inset-0.5 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-2xl blur opacity-0 group-hover:opacity-20 transition duration-300"></div>
+                </button>
+              </>
+            )}
           </div>
         </div>
       )}
@@ -207,7 +207,7 @@ export default function Home() {
       <ChatInput
         input={input}
         setInput={setInput}
-        isLoading={isLoading || !config}
+        isLoading={isMessageLoading || !config}
         onSend={handleSubmit}
       />
     </div>

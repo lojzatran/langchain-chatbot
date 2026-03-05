@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import Head from 'next/head';
 import { DatabaseType } from '@common/lib/types';
+import { useChatbotConfig } from '../../../hooks/useChatbotConfig';
 
 export default function ChatbotUploadPage() {
   const [file, setFile] = useState<File | null>(null);
@@ -12,6 +13,9 @@ export default function ChatbotUploadPage() {
     type: 'success' | 'error';
     text: string;
   } | null>(null);
+  const { config: remoteConfig, isLoading: isConfigLoading } =
+    useChatbotConfig();
+  const isSupabaseEnabled = remoteConfig?.supabaseGeminiEnabled ?? false;
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -167,35 +171,45 @@ export default function ChatbotUploadPage() {
             >
               Database Type
             </label>
-            <select
-              id="db-type-select"
-              value={dbType}
-              onChange={(e) => setDbType(e.target.value as DatabaseType)}
-              className="w-full bg-black/30 border border-white/20 text-white rounded-xl px-4 py-3 text-sm font-medium appearance-none cursor-pointer transition-all focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400/50 hover:border-white/40"
-              style={{
-                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236366f1'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E")`,
-                backgroundRepeat: 'no-repeat',
-                backgroundPosition: 'right 1rem center',
-                backgroundSize: '1rem',
-              }}
-            >
-              {Object.values(DatabaseType).map((type) => (
-                <option
-                  key={type}
-                  value={type}
-                  className="bg-gray-900 text-white capitalize"
-                >
-                  {type.charAt(0).toUpperCase() + type.slice(1)}
-                </option>
-              ))}
-            </select>
+            {isConfigLoading ? (
+              <div className="w-full h-[46px] bg-black/30 border border-white/10 rounded-xl animate-pulse"></div>
+            ) : (
+              <select
+                id="db-type-select"
+                value={dbType}
+                onChange={(e) => setDbType(e.target.value as DatabaseType)}
+                className="w-full bg-black/30 border border-white/20 text-white rounded-xl px-4 py-3 text-sm font-medium appearance-none cursor-pointer transition-all focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400/50 hover:border-white/40"
+                style={{
+                  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236366f1'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E")`,
+                  backgroundRepeat: 'no-repeat',
+                  backgroundPosition: 'right 1rem center',
+                  backgroundSize: '1rem',
+                }}
+              >
+                {Object.values(DatabaseType).map((type) => {
+                  const isDisabled =
+                    type === DatabaseType.SUPABASE && !isSupabaseEnabled;
+                  return (
+                    <option
+                      key={type}
+                      value={type}
+                      disabled={isDisabled}
+                      className={`bg-gray-900 text-white capitalize ${isDisabled ? 'opacity-50' : ''}`}
+                    >
+                      {type.charAt(0).toUpperCase() + type.slice(1)}
+                      {isDisabled ? ' (Unsupported - Check Keys)' : ''}
+                    </option>
+                  );
+                })}
+              </select>
+            )}
           </div>
 
           <button
             type="submit"
-            disabled={!file || uploading}
+            disabled={!file || uploading || isConfigLoading}
             className={`w-full py-4 px-6 rounded-xl font-bold text-white transition-all transform flex items-center justify-center ${
-              !file || uploading
+              !file || uploading || isConfigLoading
                 ? 'bg-gray-600 cursor-not-allowed opacity-50'
                 : 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 active:scale-[0.98] shadow-lg shadow-indigo-600/40'
             }`}
