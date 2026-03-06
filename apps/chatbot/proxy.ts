@@ -1,12 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getLogger } from './src/lib/logger';
 
 export const config = {
   matcher: ['/:path*'],
 };
 
+const logger = getLogger();
+
 export function proxy(req: NextRequest) {
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0] || 'unknown';
-  console.log('Middleware IP:', ip);
+  logger.debug(`Middleware IP: ${ip}`);
 
   if (process.env.NODE_ENV === 'development') {
     return NextResponse.next();
@@ -32,7 +35,7 @@ export function proxy(req: NextRequest) {
         return NextResponse.next();
       }
     } catch (e) {
-      console.error('Auth error:', e);
+      logger.error(e, 'Auth error');
     }
   }
 

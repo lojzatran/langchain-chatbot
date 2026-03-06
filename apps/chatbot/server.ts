@@ -4,7 +4,9 @@ import next from 'next';
 import { Duplex } from 'stream';
 import ChatbotWebsocketServer from './src/app/WebsocketServer';
 import WebsocketClientsManager from './src/lib/WebsocketClientsManager';
+import { getLogger } from './src/lib/logger';
 
+const logger = getLogger();
 const port = parseInt(process.env.PORT || '8080', 10);
 const dev = process.env.NODE_ENV !== 'production';
 const app = next({ dev });
@@ -32,7 +34,7 @@ app.prepare().then(() => {
     }
   });
 
-  console.log(
+  logger.info(
     `> Server listening at http://localhost:${port} as ${
       dev ? 'development' : process.env.NODE_ENV
     }`,

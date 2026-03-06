@@ -4,6 +4,9 @@ import { join, resolve } from 'path';
 import { NextRequest } from 'next/server';
 import amqplib from 'amqplib';
 import type { DatabaseType } from '@common';
+import { getLogger } from '@/apps/chatbot/src/lib/logger';
+
+const logger = getLogger()
 
 export async function GET() {
   const isSupabaseGeminiEnabled = Boolean(env.GOOGLE_API_KEY);
@@ -56,7 +59,7 @@ export async function POST(request: NextRequest) {
       message: `File ${file.name} uploaded successfully`,
     });
   } catch (error) {
-    console.error('Upload error:', error);
+    logger.error(error, 'Upload error');
     return Response.json({ error: 'Failed to upload file' }, { status: 500 });
   }
 }

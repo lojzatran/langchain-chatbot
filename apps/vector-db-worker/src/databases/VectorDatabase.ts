@@ -2,6 +2,9 @@ import { Embeddings } from '@langchain/core/embeddings';
 import { Document } from '@langchain/core/documents';
 import { RecursiveCharacterTextSplitter } from '@langchain/textsplitters';
 import { env } from '@common';
+import { getLogger } from '../utils/logger';
+
+const logger = getLogger();
 
 interface VectorDatabase {
   fill(data: string): Promise<void>;
@@ -19,7 +22,7 @@ export abstract class VectorDatabaseImpl<T> implements VectorDatabase {
   }
 
   async fill(data: string): Promise<void> {
-    console.log('Start filling vector database...');
+    logger.info('Start filling vector database...');
     const chunks = await this.createChunks(data);
 
     const embeddingsClient = this.getEmbeddingsClient();
@@ -29,14 +32,14 @@ export abstract class VectorDatabaseImpl<T> implements VectorDatabase {
     // Delete existing collection/table if it exists to start fresh
     try {
       await this.clearDatabase(dbClient);
-      console.log('Existing collection/table deleted.');
+      logger.info('Existing collection/table deleted.');
     } catch (e) {
-      console.warn('Error while clearing database, continuing...', e);
+      logger.warn(e, 'Error while clearing database, continuing...');
     }
 
     await this.convertAndSaveEmbeddings(dbClient, embeddingsClient, chunks);
 
-    console.log('Vector database filled successfully!');
+    logger.info('Vector database filled successfully!');
   }
 
   abstract getEmbeddingsClient(): Embeddings;

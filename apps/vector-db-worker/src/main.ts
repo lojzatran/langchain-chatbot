@@ -2,6 +2,9 @@ import amqp from 'amqplib';
 import { readFile } from 'fs/promises';
 import { env } from '@common';
 import { createDatabaseHelper } from './databases/fill-database-factory';
+import { getLogger } from './utils/logger';
+
+const logger = getLogger();
 
 const main = async () => {
   const rabbitmqUrl = env.RABBITMQ_URL;
@@ -9,7 +12,7 @@ const main = async () => {
   const channel = await connection.createChannel();
   await channel.assertQueue('fill_vector_store', { durable: false });
 
-  console.log('Worker is ready...');
+  logger.info('Worker is ready...');
 
   channel.consume('fill_vector_store', async (msg) => {
     if (msg) {
@@ -17,7 +20,7 @@ const main = async () => {
       try {
         content = JSON.parse(msg.content.toString());
       } catch (error) {
-        console.error('Failed to parse message:', msg);
+        logger.error(error, 'Failed to parse message');
         channel.ack(msg);
         return;
       }
@@ -29,7 +32,7 @@ const main = async () => {
           const dbHelper = createDatabaseHelper(content.dbType);
           await dbHelper.fill(fileContent);
         } catch (err) {
-          console.error(`Error processing file ${filePath}:`, err);
+          logger.error(err, `Error processing file ${filePath}`);
         }
       }
 

@@ -3,6 +3,9 @@ import { IncomingMessage } from 'http';
 import { Duplex } from 'stream';
 import ChatbotClientsManager from '../lib/WebsocketClientsManager';
 import { ChatSession } from '../types/chat';
+import { getLogger } from '../lib/logger';
+
+const logger = getLogger();
 
 export default class ChatbotWebsocketServer {
   private wss: WebSocketServer;
@@ -15,14 +18,14 @@ export default class ChatbotWebsocketServer {
 
   start() {
     this.wss.on('connection', (ws: WebSocket) => {
-      console.log('Client connected');
+      logger.debug('Client connected');
 
       ws.on('message', async (messageBuffer: Buffer) => {
         await this.processMessageBuffer(ws, messageBuffer);
       });
 
       ws.on('close', () => {
-        console.log('Client disconnected');
+        logger.debug('Client disconnected');
         this.clientManager.removeClient(ws);
       });
     });
@@ -31,12 +34,12 @@ export default class ChatbotWebsocketServer {
   async processMessageBuffer(ws: WebSocket, messageBuffer: Buffer) {
     try {
       const message = JSON.parse(messageBuffer.toString());
-      console.log('Client message: ', message);
+      logger.debug(message, 'Client message');
       const chatSession: ChatSession = this.clientManager.getClientOrDefault(ws);
 
       if (message.type === 'config') {
         this.clientManager.setSelectedConfig(ws, message.config);
-        console.log(`Config updated for client to: ${message.config}`);
+        logger.debug(`Config updated for client to: ${message.config}`);
         return;
       }
 
@@ -45,7 +48,7 @@ export default class ChatbotWebsocketServer {
         await chatSession.handleAnswer(content);
       }
     } catch (error) {
-      console.error('WebSocket message error:', error);
+      logger.error(error, 'WebSocket message error');
     }
   }
 

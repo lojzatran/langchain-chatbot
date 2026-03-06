@@ -10,6 +10,9 @@ import { StringOutputParser } from '@langchain/core/output_parsers';
 import { WebSocket } from 'ws';
 import { BaseChatModel } from '@langchain/core/language_models/chat_models';
 import { BaseRetriever } from '@langchain/core/retrievers';
+import { getLogger } from '@/apps/chatbot/src/lib/logger';
+
+const logger = getLogger();
 
 interface ChainInput {
   question: string;
@@ -64,7 +67,7 @@ export default abstract class ChatbotEngine {
       });
     } catch (error) {
       if (this.isClientDisconnectAbort(error)) {
-        console.warn('Streaming stopped because the client disconnected.');
+        logger.warn('Streaming stopped because the client disconnected.');
         return;
       }
       this.handleError(error);
@@ -118,7 +121,7 @@ export default abstract class ChatbotEngine {
 
     for await (const streamEvent of answerStreamEvent) {
       if (this.ws.readyState !== WebSocket.OPEN) {
-        console.warn('WebSocket closed during stream processing');
+        logger.warn('WebSocket closed during stream processing');
         break;
       }
 
